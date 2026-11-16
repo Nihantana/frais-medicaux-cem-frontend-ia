@@ -17,6 +17,7 @@ import T5XConfigurationPage from "../pages/T5XConfiguration";
 import AssistantGlobalPage from "../pages/AssistantGlobalPage";
 import UserManagementPage from "../pages/UserManagementPage";
 import RoleManagementPage from "../pages/RoleManagementPage";
+import AuditSessionsPage from "../pages/AuditSessionsPage";
 import PaiePage from "../pages/PaiePage";
 import DashboardPage from "../pages/DashboardPage";
 import { fetchIdpLookupMock } from "../features/invoice/mocks/idpLookup";
@@ -87,6 +88,14 @@ export default function AppRoutes() {
         element={
           <AppShell>
             <RoleManagementPage />
+          </AppShell>
+        }
+      />
+      <Route
+        path={ROUTES.audit}
+        element={
+          <AppShell>
+            <AuditSessionsPage />
           </AppShell>
         }
       />

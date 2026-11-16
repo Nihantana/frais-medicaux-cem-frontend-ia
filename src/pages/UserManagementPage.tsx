@@ -31,6 +31,7 @@ export default function UserManagementPage() {
   const [roles, setRoles] = useState<ManagedRole[]>([]);
   const [selected, setSelected] = useState<ManagedUser | null>(null);
   const [permissions, setPermissions] = useState<EffectivePermission[]>([]);
+  const [permissionsLoading, setPermissionsLoading] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editing, setEditing] = useState<ManagedUser | null>(null);
   const [creating, setCreating] = useState(false);
@@ -48,6 +49,13 @@ export default function UserManagementPage() {
       ]);
       setUsers(utilisateurs);
       setRoles(catalogueRoles);
+      setSelected((current) =>
+        current
+          ? (utilisateurs.find((user) => user.id === current.id) ??
+            utilisateurs[0] ??
+            null)
+          : (utilisateurs[0] ?? null),
+      );
       setError(null);
     } catch (cause) {
       setError(errorMessage(cause, "Impossible de charger les utilisateurs."));
@@ -64,17 +72,31 @@ export default function UserManagementPage() {
   }, [role]);
 
   useEffect(() => {
+    let active = true;
     async function chargerPermissions(): Promise<void> {
-      if (selected === null) return;
+      setPermissions([]);
+      if (selected === null) {
+        setPermissionsLoading(false);
+        return;
+      }
+      setPermissionsLoading(true);
       try {
-        setPermissions(await getUserPermissions(selected.id));
+        const nextPermissions = await getUserPermissions(selected.id);
+        if (active) setPermissions(nextPermissions);
       } catch (cause) {
-        setError(
-          errorMessage(cause, "Impossible de charger les permissions."),
-        );
+        if (active) {
+          setError(
+            errorMessage(cause, "Impossible de charger les permissions."),
+          );
+        }
+      } finally {
+        if (active) setPermissionsLoading(false);
       }
     }
     void chargerPermissions();
+    return () => {
+      active = false;
+    };
   }, [selected]);
 
   if (role !== "ADMINISTRATEUR") {
@@ -183,39 +205,67 @@ export default function UserManagementPage() {
       )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(340px,1fr)]">
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <section className="flex h-[70vh] min-h-[24rem] max-h-[48rem] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="shrink-0 border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-900">
+            Utilisateurs ({users.length})
+          </div>
           {loading ? (
-            <div className="p-6 text-sm text-slate-500">Chargement...</div>
+            <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto p-6 text-sm text-slate-500">
+              Chargement...
+            </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="thin-scrollbar min-h-0 flex-1 overflow-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-500">
                   <tr>
-                    <th className="px-4 py-3">Utilisateur</th>
-                    <th className="px-4 py-3">Rôle</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                    <th className="border-b border-slate-200 px-4 py-3">
+                      Utilisateur
+                    </th>
+                    <th className="border-b border-slate-200 px-4 py-3">
+                      Rôle
+                    </th>
+                    <th className="border-b border-slate-200 px-4 py-3 text-right">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
+                  {users.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={3}
+                        className="px-4 py-8 text-center text-sm text-slate-500"
+                      >
+                        Aucun utilisateur disponible.
+                      </td>
+                    </tr>
+                  )}
                   {users.map((user) => (
                     <tr
                       key={user.id}
-                      className={
-                        selected?.id === user.id ? "bg-blue-50" : undefined
-                      }
+                      className={`cursor-pointer transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400 ${
+                        selected?.id === user.id
+                          ? "bg-blue-50 hover:bg-blue-100"
+                          : ""
+                      }`}
+                      onClick={() => setSelected(user)}
+                      onKeyDown={(event) => {
+                        if (
+                          event.target === event.currentTarget &&
+                          (event.key === "Enter" || event.key === " ")
+                        ) {
+                          event.preventDefault();
+                          setSelected(user);
+                        }
+                      }}
+                      tabIndex={0}
+                      aria-selected={selected?.id === user.id}
                     >
-                      <td className="px-4 py-3">
-                        <button
-                          className="text-left"
-                          onClick={() => setSelected(user)}
-                        >
-                          <div className="font-semibold text-slate-900">
-                            {user.nom}
-                          </div>
-                          <div className="text-xs text-slate-500">
-                            {user.email ?? "Email non renseigné"}
-                          </div>
-                        </button>
+                      <td className="px-4 py-3 font-semibold text-slate-900">
+                        <div>{user.nom}</div>
+                        <div className="text-xs font-normal text-slate-500">
+                          {user.email ?? "Email non renseigné"}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
@@ -225,16 +275,26 @@ export default function UserManagementPage() {
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-1">
                           <button
+                            type="button"
                             className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
                             title="Modifier"
-                            onClick={() => openEdit(user)}
+                            aria-label={`Modifier ${user.nom}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openEdit(user);
+                            }}
                           >
                             <Pencil size={16} />
                           </button>
                           <button
+                            type="button"
                             className="rounded-lg p-2 text-red-600 hover:bg-red-50"
                             title="Supprimer"
-                            onClick={() => setDeleting(user)}
+                            aria-label={`Supprimer ${user.nom}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setDeleting(user);
+                            }}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -246,10 +306,10 @@ export default function UserManagementPage() {
               </table>
             </div>
           )}
-        </div>
+        </section>
 
-        <div className="rounded-2xl border border-slate-200 bg-white">
-          <div className="border-b border-slate-100 p-5">
+        <section className="flex h-[70vh] min-h-[24rem] max-h-[48rem] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="shrink-0 border-b border-slate-100 p-5">
             <div className="flex items-center gap-2 font-bold text-slate-900">
               <ShieldCheck size={18} />
               Permissions
@@ -260,11 +320,20 @@ export default function UserManagementPage() {
                 : "Sélectionnez un utilisateur."}
             </p>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="thin-scrollbar min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto">
+            {permissionsLoading ? (
+              <p className="p-5 text-sm text-slate-500">
+                Chargement des permissions…
+              </p>
+            ) : permissions.length === 0 ? (
+              <p className="p-5 text-sm text-slate-500">
+                Aucune permission à afficher.
+              </p>
+            ) : null}
             {permissions.map((permission) => (
               <div
                 key={permission.id}
-                className="flex items-center justify-between gap-3 p-4"
+                className="flex items-center justify-between gap-3 p-4 transition-colors hover:bg-slate-50"
               >
                 <div>
                   <div className="text-sm font-semibold text-slate-800">
@@ -294,7 +363,7 @@ export default function UserManagementPage() {
               </div>
             ))}
           </div>
-        </div>
+        </section>
       </div>
 
       <Modal
@@ -337,7 +406,10 @@ export default function UserManagementPage() {
             Rôles
             <div className="mt-2 grid grid-cols-2 gap-2">
               {roles.map((option) => (
-                <label key={option.id} className="flex items-center gap-2 text-sm">
+                <label
+                  key={option.id}
+                  className="flex items-center gap-2 text-sm"
+                >
                   <input
                     type="checkbox"
                     checked={form.roles.includes(option.code)}

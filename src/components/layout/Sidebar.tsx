@@ -15,6 +15,7 @@ import {
   Receipt,
   Sparkles,
   ClipboardPlus,
+  ClipboardList,
   WalletCards,
   X,
   LayoutDashboard,
@@ -45,6 +46,7 @@ const nav: NavEntry[] = [
   { to: "/referentiels", label: "Référentiels", icon: Settings },
   { to: "/utilisateurs", label: "Utilisateurs", icon: Users },
   { to: "/roles", label: "Rôles et permissions", icon: ShieldCheck },
+  { to: "/audit", label: "Audit et sessions", icon: ClipboardList },
   {
     to: "/demandes-suppression",
     label: "Demandes de suppression",

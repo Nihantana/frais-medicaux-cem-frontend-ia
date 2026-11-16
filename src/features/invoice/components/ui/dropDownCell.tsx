@@ -3,15 +3,12 @@ import { CirclePlus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../../constants/routes";
 import { fillPath } from "../../../../services/api-contract";
-import {
-    TypeContrainte,
-    type DropdownOption,
-} from "../../types/dropDown";
+import { TypeContrainte, type DropdownOption } from "../../types/dropDown";
 
 const ROUTE_BY_CONSTRAINT: Record<TypeContrainte, string> = {
-    [TypeContrainte.PAR_AN]: ROUTES.T5ParAn,
-    [TypeContrainte.PAR_AN_PAR_ACTE]: ROUTES.T5ParAnParActe,
-    [TypeContrainte.PAR_SEANCE]: ROUTES.T5Parseance,
+  [TypeContrainte.PAR_AN]: ROUTES.T5ParAn,
+  [TypeContrainte.PAR_AN_PAR_ACTE]: ROUTES.T5ParAnParActe,
+  [TypeContrainte.PAR_SEANCE]: ROUTES.T5Parseance,
 };
 
 export default function DropDownCell({
@@ -38,7 +35,7 @@ export default function DropDownCell({
       </div>
 
       {open && !isLocked && (
-        <ul className="absolute left-0 top-full z-10 max-h-72 w-max min-w-full overflow-y-auto bg-white shadow-md">
+        <ul className="absolute left-0 top-full z-20 max-h-72 w-max min-w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
           {options.map((option) => {
             const route = ROUTE_BY_CONSTRAINT[option.typeContrainte];
             const path = fillPath(route, {
@@ -49,11 +46,13 @@ export default function DropDownCell({
             return (
               <li
                 key={`${option.type}-${option.id}`}
-                className="flex h-10 items-center gap-2 px-3 hover:bg-slate-50"
+                className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
               >
                 <Link
                   className="flex min-w-0 flex-1 items-center gap-2"
                   to={{ pathname: path, search: `?type=${option.type}` }}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
                   <span className="truncate">{option.label}</span>
                   <span

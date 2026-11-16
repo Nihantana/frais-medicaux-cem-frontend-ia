@@ -8,6 +8,7 @@ export const ROUTES = {
   referentials: "/referentiels",
   users: "/utilisateurs",
   roles: "/roles",
+  audit: "/audit",
   deletionRequests: "/demandes-suppression",
   invoice: "/factures",
   invoiceT6: "/factures/t6",

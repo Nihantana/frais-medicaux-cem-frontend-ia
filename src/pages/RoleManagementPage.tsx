@@ -32,7 +32,15 @@ export default function RoleManagementPage() {
 
   async function loadRoles(): Promise<void> {
     try {
-      setRoles(await listRoles());
+      const nextRoles = await listRoles();
+      setRoles(nextRoles);
+      setSelected((current) =>
+        current
+          ? (nextRoles.find((item) => item.id === current.id) ??
+            nextRoles[0] ??
+            null)
+          : (nextRoles[0] ?? null),
+      );
       setError(null);
     } catch (cause) {
       setError(errorMessage(cause, "Impossible de charger les rôles."));
@@ -47,15 +55,25 @@ export default function RoleManagementPage() {
   }, [role]);
 
   useEffect(() => {
+    let active = true;
     async function chargerPermissions(): Promise<void> {
+      setPermissions([]);
       if (selected === null) return;
       try {
-        setPermissions(await getRolePermissions(selected.id));
+        const nextPermissions = await getRolePermissions(selected.id);
+        if (active) setPermissions(nextPermissions);
       } catch (cause) {
-        setError(errorMessage(cause, "Impossible de charger les permissions."));
+        if (active) {
+          setError(
+            errorMessage(cause, "Impossible de charger les permissions."),
+          );
+        }
       }
     }
     void chargerPermissions();
+    return () => {
+      active = false;
+    };
   }, [selected]);
 
   if (role !== "ADMINISTRATEUR") {
@@ -125,7 +143,9 @@ export default function RoleManagementPage() {
     }
   }
 
-  async function restorePermission(permission: EffectivePermission): Promise<void> {
+  async function restorePermission(
+    permission: EffectivePermission,
+  ): Promise<void> {
     if (selected === null) return;
     try {
       await resetRolePermission(selected.id, permission.code);
@@ -146,7 +166,10 @@ export default function RoleManagementPage() {
             Configurez les permissions par défaut de chaque rôle.
           </p>
         </div>
-        <button className="btn-primary flex items-center gap-2" onClick={openCreate}>
+        <button
+          className="btn-primary flex items-center gap-2"
+          onClick={openCreate}
+        >
           <Plus size={16} /> Nouveau rôle
         </button>
       </div>
@@ -158,26 +181,54 @@ export default function RoleManagementPage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-        <div className="rounded-2xl border border-slate-200 bg-white">
-          <div className="border-b border-slate-100 p-5 font-bold text-slate-900">
+        <section className="flex h-[70vh] min-h-[24rem] max-h-[48rem] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="shrink-0 border-b border-slate-100 p-5 font-bold text-slate-900">
             Rôles
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="thin-scrollbar min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto">
+            {roles.length === 0 && (
+              <p className="p-5 text-sm text-slate-500">
+                Aucun rôle disponible.
+              </p>
+            )}
             {roles.map((item) => (
               <div
                 key={item.id}
-                className={`flex items-center justify-between p-4 ${selected?.id === item.id ? "bg-blue-50" : ""}`}
+                className={`group flex min-h-16 items-stretch justify-between transition-colors ${
+                  selected?.id === item.id
+                    ? "bg-blue-50 hover:bg-blue-100"
+                    : "hover:bg-slate-50"
+                }`}
               >
-                <button className="text-left" onClick={() => setSelected(item)}>
-                  <div className="font-semibold text-slate-900">{item.libelle}</div>
-                  <div className="text-xs text-slate-400">{item.code}</div>
+                <button
+                  type="button"
+                  className="flex min-w-0 flex-1 flex-col justify-center px-4 py-3 text-left"
+                  onClick={() => setSelected(item)}
+                  aria-pressed={selected?.id === item.id}
+                >
+                  <span className="font-semibold text-slate-900">
+                    {item.libelle}
+                  </span>
+                  <span className="text-xs text-slate-400">{item.code}</span>
                 </button>
-                <div className="flex gap-1">
-                  <button className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" onClick={() => openEdit(item)}>
+                <div className="flex shrink-0 items-center gap-1 px-2">
+                  <button
+                    type="button"
+                    className="rounded-lg p-2 text-slate-500 hover:bg-white hover:text-slate-900"
+                    title={`Modifier ${item.libelle}`}
+                    aria-label={`Modifier ${item.libelle}`}
+                    onClick={() => openEdit(item)}
+                  >
                     <Pencil size={16} />
                   </button>
                   {!item.systeme && (
-                    <button className="rounded-lg p-2 text-red-600 hover:bg-red-50" onClick={() => setDeleting(item)}>
+                    <button
+                      type="button"
+                      className="rounded-lg p-2 text-red-600 hover:bg-red-50"
+                      title={`Supprimer ${item.libelle}`}
+                      aria-label={`Supprimer ${item.libelle}`}
+                      onClick={() => setDeleting(item)}
+                    >
                       <Trash2 size={16} />
                     </button>
                   )}
@@ -185,10 +236,10 @@ export default function RoleManagementPage() {
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
-        <div className="rounded-2xl border border-slate-200 bg-white">
-          <div className="border-b border-slate-100 p-5">
+        <section className="flex h-[70vh] min-h-[24rem] max-h-[48rem] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="shrink-0 border-b border-slate-100 p-5">
             <div className="flex items-center gap-2 font-bold text-slate-900">
               <ShieldCheck size={18} />
               Permissions
@@ -197,11 +248,21 @@ export default function RoleManagementPage() {
               {selected?.libelle ?? "Sélectionnez un rôle."}
             </p>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="thin-scrollbar min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto">
+            {permissions.length === 0 && (
+              <p className="p-5 text-sm text-slate-500">
+                Aucune permission à afficher.
+              </p>
+            )}
             {permissions.map((permission) => (
-              <div key={permission.id} className="flex items-center justify-between gap-3 p-4">
+              <div
+                key={permission.id}
+                className="flex items-center justify-between gap-3 p-4 transition-colors hover:bg-slate-50"
+              >
                 <div>
-                  <div className="text-sm font-semibold text-slate-800">{permission.libelle}</div>
+                  <div className="text-sm font-semibold text-slate-800">
+                    {permission.libelle}
+                  </div>
                   <div className="text-xs text-slate-400">
                     {permission.personnalisee ? "Configurée" : "Non configurée"}
                   </div>
@@ -211,10 +272,15 @@ export default function RoleManagementPage() {
                     type="checkbox"
                     checked={permission.autorisee}
                     disabled={selected?.systeme === true}
-                    onChange={(event) => void changePermission(permission, event.target.checked)}
+                    onChange={(event) =>
+                      void changePermission(permission, event.target.checked)
+                    }
                   />
                   {permission.personnalisee && selected?.systeme !== true && (
-                    <button className="text-xs text-slate-500 underline" onClick={() => void restorePermission(permission)}>
+                    <button
+                      className="text-xs text-slate-500 underline"
+                      onClick={() => void restorePermission(permission)}
+                    >
                       Défaut
                     </button>
                   )}
@@ -222,7 +288,7 @@ export default function RoleManagementPage() {
               </div>
             ))}
           </div>
-        </div>
+        </section>
       </div>
 
       <Modal
@@ -242,7 +308,9 @@ export default function RoleManagementPage() {
               required
               disabled={editing !== null}
               value={form.code}
-              onChange={(event) => setForm({ ...form, code: event.target.value })}
+              onChange={(event) =>
+                setForm({ ...form, code: event.target.value })
+              }
             />
           </label>
           <label className="block text-sm font-semibold text-slate-700">
@@ -251,14 +319,25 @@ export default function RoleManagementPage() {
               className="input mt-1 w-full"
               required
               value={form.libelle}
-              onChange={(event) => setForm({ ...form, libelle: event.target.value })}
+              onChange={(event) =>
+                setForm({ ...form, libelle: event.target.value })
+              }
             />
           </label>
           <div className="flex justify-end gap-2">
-            <button type="button" className="btn-secondary" onClick={() => { setCreating(false); setEditing(null); }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setCreating(false);
+                setEditing(null);
+              }}
+            >
               Annuler
             </button>
-            <button className="btn-primary" disabled={saving}>Enregistrer</button>
+            <button className="btn-primary" disabled={saving}>
+              Enregistrer
+            </button>
           </div>
         </form>
       </Modal>
