@@ -29,9 +29,46 @@ function toDisplayDate(value: string | null, field: string, factureId: number): 
 	return formatted;
 }
 
+function dernierMouvementDeType(
+	facture: FactureGlobaleListeeResponseDto,
+	type: string,
+) {
+	return facture.mouvements
+		.filter((mouvement) => mouvement.type === type)
+		.reduce<typeof facture.mouvements[number] | null>(
+			(dernier, mouvement) =>
+				dernier === null || mouvement.id > dernier.id ? mouvement : dernier,
+			null,
+		);
+}
+
+function dernierMouvementDeTypes(
+	facture: FactureGlobaleListeeResponseDto,
+	types: readonly string[],
+) {
+	return facture.mouvements
+		.filter((mouvement) => types.includes(mouvement.type))
+		.reduce<typeof facture.mouvements[number] | null>(
+			(dernier, mouvement) =>
+				dernier === null || mouvement.id > dernier.id ? mouvement : dernier,
+			null,
+		);
+}
+
 export function mapFactureGlobaleResponse(
 	facture: FactureGlobaleListeeResponseDto,
 ): FactureGlobaleRow {
+	const enregistrement = dernierMouvementDeType(facture, "ENREGISTREMENT");
+	const envoiValidation = dernierMouvementDeType(facture, "ENVOI_VALIDATION");
+	const retourPrestataire = dernierMouvementDeType(facture, "RETOUR_PRESTATAIRE");
+	const receptionApresModification = dernierMouvementDeType(facture, "RECEPTION_APRES_MODIFICATION");
+	const retourCorrection = dernierMouvementDeType(facture, "RETOUR_POUR_CORRECTION");
+	const dernierMouvementRemarque2 = dernierMouvementDeTypes(facture, [
+		"ENVOI_VALIDATION",
+		"RETOUR_POUR_CORRECTION",
+	]);
+	const validation = dernierMouvementDeType(facture, "VALIDATION");
+	const sortie = dernierMouvementDeType(facture, "SORTIE");
 	const montantTotal = toAmount(facture.montantTotal, "montant total", facture.id);
 	const partCem100 = toAmount(facture.total100Cem, "total 100 % CEM", facture.id);
 	const depassement = toAmount(facture.totalDepassement, "total dépassement", facture.id);
@@ -40,6 +77,7 @@ export function mapFactureGlobaleResponse(
 		id: facture.id,
 		prestataireId: facture.prestataireId,
 		piecesJointes: (facture.piecesJointes ?? []).map(mapFactureAttachment),
+		statut: facture.statut,
 		refSocial: facture.refSociale,
 		dateReception: toDisplayDate(facture.dateReception, "date de réception", facture.id),
 		numFacture: facture.numFacture,
@@ -55,18 +93,22 @@ export function mapFactureGlobaleResponse(
 		moisPrestation: facture.moisPrestation ? toMonth(facture.moisPrestation, facture.id) : null,
 		refAgence: facture.refAgence ?? "",
 		remarques1: facture.remarque ?? "",
-		retourPrestataire: "",
-		recuApresModification: "",
-		dateEnregistrement: toDisplayDate(facture.createdAt, "date de création", facture.id),
-		parQuiEnregistrement: "",
-		dateEnvoiValidation: "",
-		pourQuiValidation: "",
-		remarques2: "",
-		retourCorrection: "",
-		dateValidation: toDisplayDate(facture.dateValidation, "date de validation", facture.id),
-		parQuiValidationFinale: "",
-		dateSortie: "",
-		serviceSortie: "",
+		retourPrestataire: retourPrestataire?.remarque ?? "",
+		recuApresModification: toDisplayDate(
+			receptionApresModification?.date ?? null,
+			"date de réception après modification",
+			facture.id,
+		),
+		dateEnregistrement: toDisplayDate(enregistrement?.date ?? facture.createdAt, "date d'enregistrement", facture.id),
+		parQuiEnregistrement: enregistrement?.effectuePar.nom ?? "",
+		dateEnvoiValidation: toDisplayDate(envoiValidation?.date ?? null, "date d'envoi pour validation", facture.id),
+		pourQuiValidation: envoiValidation?.adresseA?.nom ?? "",
+		remarques2: dernierMouvementRemarque2?.remarque ?? "",
+		retourCorrection: retourCorrection?.remarque ?? "",
+		dateValidation: toDisplayDate(validation?.date ?? facture.dateValidation, "date de validation", facture.id),
+		parQuiValidationFinale: validation?.effectuePar.nom ?? "",
+		dateSortie: toDisplayDate(sortie?.date ?? null, "date de sortie", facture.id),
+		serviceSortie: sortie?.service ?? "",
 	};
 }
 

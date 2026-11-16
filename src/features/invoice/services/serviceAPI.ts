@@ -10,6 +10,9 @@ import {
 const ROUTES = {
 	list: "/factures",
 	detail: "/factures/{id}",
+	transitions: "/factures/{id}/transitions",
+	lines: "/factures/{id}/lignes",
+	line: "/factures/{id}/lignes/{ligneId}",
 	attachments: "/factures/{id}/pieces-jointes",
 	attachment: "/factures/{id}/pieces-jointes/{pieceId}",
 } as const satisfies Record<string, keyof FacturePaths>;
@@ -40,16 +43,58 @@ export type UpdateFactureBody = BodyOf<
 	FacturePaths,
 	typeof ROUTES.detail,
 	"patch"
->;
+> & {
+	dateRetourAction?: string;
+};
 export type UpdateFactureResponse = ResponseOf<
 	FacturePaths,
 	typeof ROUTES.detail,
 	"patch"
 >;
+export type FactureLinesResponse = ResponseOf<
+	FacturePaths,
+	typeof ROUTES.lines,
+	"get"
+>;
+export type CreateFactureLineBody = BodyOf<
+	FacturePaths,
+	typeof ROUTES.lines,
+	"post"
+>;
+export type CreateFactureLineResponse = ResponseOf<
+	FacturePaths,
+	typeof ROUTES.lines,
+	"post"
+>;
+export type UpdateFactureLineBody = BodyOf<
+	FacturePaths,
+	typeof ROUTES.line,
+	"put"
+>;
+export type UpdateFactureLineResponse = ResponseOf<
+	FacturePaths,
+	typeof ROUTES.line,
+	"put"
+>;
 export type FactureAttachmentResponse = ResponseOf<
 	FacturePaths,
 	typeof ROUTES.attachments,
 	"post"
+>;
+export type FactureWorkflowBody = BodyOf<
+	FacturePaths,
+	"/factures/{id}/statut",
+	"patch"
+>;
+export type FactureWorkflowResponse = ResponseOf<
+	FacturePaths,
+	"/factures/{id}/statut",
+	"patch"
+>;
+export type FactureTransitionsResponse = ResponseOf<
+	FacturePaths,
+	typeof ROUTES.transitions,
+	"get"
 >;
 
 export const getFactures = (
@@ -59,6 +104,11 @@ export const getFactures = (
 
 export const getFacture = (id: number): Promise<FactureDetailResponse> =>
 	apiService.get<FactureDetailResponse>(fillPath(ROUTES.detail, { id }));
+
+export const getFactureTransitions = (
+	id: number,
+): Promise<FactureTransitionsResponse> =>
+	apiService.get<FactureTransitionsResponse>(fillPath(ROUTES.transitions, { id }));
 
 export const createFacture = (
 	body: CreateFactureBody,
@@ -71,6 +121,40 @@ export const updateFacture = (
 ): Promise<UpdateFactureResponse> =>
 	apiService.patch<UpdateFactureResponse>(
 		fillPath(ROUTES.detail, { id }),
+		body,
+	);
+
+export const getFactureLines = (id: number): Promise<FactureLinesResponse> =>
+	apiService.get<FactureLinesResponse>(fillPath(ROUTES.lines, { id }));
+
+export const createFactureLine = (
+	id: number,
+	body: CreateFactureLineBody,
+): Promise<CreateFactureLineResponse> =>
+	apiService.post<CreateFactureLineResponse>(
+		fillPath(ROUTES.lines, { id }),
+		body,
+	);
+
+export const updateFactureLine = (
+	id: number,
+	ligneId: number,
+	body: UpdateFactureLineBody,
+): Promise<UpdateFactureLineResponse> =>
+	apiService.put<UpdateFactureLineResponse>(
+		fillPath(ROUTES.line, { id, ligneId }),
+		body,
+	);
+
+export const deleteFactureLine = (id: number, ligneId: number): Promise<void> =>
+	apiService.delete<void>(fillPath(ROUTES.line, { id, ligneId }));
+
+export const updateFactureStatut = (
+	id: number,
+	body: FactureWorkflowBody,
+): Promise<FactureWorkflowResponse> =>
+	apiService.patch<FactureWorkflowResponse>(
+		fillPath("/factures/{id}/statut", { id }),
 		body,
 	);
 

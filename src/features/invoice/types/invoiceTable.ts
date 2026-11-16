@@ -16,6 +16,7 @@ export type FactureGlobaleRow = {
 	/** Provider referenced by the API; used to resolve `localite`. */
 	prestataireId?: number | null;
 	piecesJointes: FactureGlobaleAttachment[];
+	statut: string;
 	refSocial: string;
 	dateReception: string;
 	numFacture: string;
@@ -104,6 +105,7 @@ export type FactureGlobaleTableProps = {
 	onAddAttachment: (rowId: number, file: File) => Promise<void>;
 	onRemoveAttachment: (rowId: number, attachmentId: string) => Promise<void>;
 	onDownloadAttachment: (rowId: number, attachmentId: string) => Promise<Blob>;
+	onOpenActions: (rowId: number) => void;
 }
 
 export type FactureGlobaleColumnKey = Exclude<keyof FactureGlobaleRow, "id" | "piecesJointes">|"majT5";
@@ -137,6 +139,7 @@ export type numberColumn =  (typeof numberColumn)[keyof typeof numberColumn];
 export const dateColumn = {
 	dateReception : "dateReception",
 	dateFacture : "dateFacture",
+	recuApresModification : "recuApresModification",
 	dateEnregistrement : "dateEnregistrement",
 	dateEnvoiValidation : "dateEnvoiValidation",
 	dateValidation : "dateValidation"

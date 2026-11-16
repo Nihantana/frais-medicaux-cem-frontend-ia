@@ -20,7 +20,8 @@ export function fillPath(
   path: string,
   params: Record<string, string | number> = {},
 ): string {
-  return path.replace(/\{(\w+)\}/g, (_, key: string) => {
+  return path.replace(/\{(\w+)\}|:(\w+)/g, (_, braceKey: string | undefined, colonKey: string | undefined) => {
+    const key = braceKey ?? colonKey;
     const value = params[key];
     if (value === undefined) throw new Error(`Paramètre de chemin manquant : ${key}`);
     return encodeURIComponent(String(value));

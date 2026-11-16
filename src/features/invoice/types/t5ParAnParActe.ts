@@ -1,5 +1,6 @@
 export type T5ParAnParActeRow = {
 	id: number;
+	acteId?: number;
 	refSocial: string;
 	dateActe: string;
 	libelle: string;
@@ -25,9 +26,12 @@ export type T5ParAnParActeTableProps = {
 	focusRefSocial?: string;
 	activeRowId?: number | null;
 	canEditRows?: boolean;
+	targetType?: "acte" | "categorie";
+	targetLabel?: string;
+	actes?: Array<{ id: number; label: string }>;
 	onCellChange: (
 		rowId: number,
-		key: Extract<T5ParAnParActeColumnKey, "dateActe" | "libelle" | "montantActe">,
-		value: string | number,
+		key: Extract<T5ParAnParActeColumnKey | "acteId", "dateActe" | "libelle" | "montantActe" | "acteId">,
+		value: string | number | { libelle: string; acteId: number },
 	) => void;
 };

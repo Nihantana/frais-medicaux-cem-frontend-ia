@@ -37,6 +37,29 @@ button:disabled {
 	background: #fff;
 	box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
 }
+.paie-report {
+	max-width: 100%;
+	min-width: 0;
+}
+.paie-report-scroll {
+	max-width: 100%;
+	-webkit-overflow-scrolling: touch;
+}
+@media print {
+	.paie-report .paie-report-scroll table {
+		min-width: 1250px;
+		font-size: 10px;
+	}
+	.paie-report .paie-report-scroll thead {
+		background: #203b6b !important;
+		color: white !important;
+	}
+	.paie-report .paie-report-scroll th,
+	.paie-report .paie-report-scroll td {
+		border: 1px solid #1e293b !important;
+		padding: 6px;
+	}
+}
 .table-shell {
 	overflow: hidden;
 	border: 1px solid #e2e8f0;
@@ -77,6 +100,34 @@ button:disabled {
 .btn-secondary:hover {
 	background: #f8fafc;
 }
+
+@keyframes assistant-drawer-in {
+	from {
+		transform: translateX(100%);
+	}
+	to {
+		transform: translateX(0);
+	}
+}
+
+@keyframes assistant-message-in {
+	from {
+		opacity: 0;
+		transform: translateY(0.35rem);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.assistant-drawer {
+	animation: assistant-drawer-in 220ms ease-out both;
+}
+
+.assistant-message {
+	animation: assistant-message-in 180ms ease-out both;
+}
 .btn-ghost {
 	display: inline-flex;
 	align-items: center;
@@ -109,5 +160,20 @@ button:disabled {
 .field:focus {
 	border-color: #e30613;
 	box-shadow: 0 0 0 3px rgb(227 6 19 / 0.09);
+}
+
+@media print {
+	aside,
+	header {
+		display: none !important;
+	}
+	main {
+		padding: 0 !important;
+		max-width: none !important;
+	}
+	.panel {
+		box-shadow: none !important;
+		border: 1px solid #cbd5e1 !important;
+	}
 }
 

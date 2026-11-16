@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLookupRefresh } from "../context/LookupContext";
+import { getFactures } from "../services/serviceAPI";
 import {
 	createT5RowMock,
 	updateT5RowMock,
@@ -10,14 +11,15 @@ import {
 
 type ReferencedRow = {
 	id: number;
+	acteId?: number;
 	refSocial: string;
 	dateActe: string;
 	libelle: string;
 	montantActe: number;
 };
 
-type EditableKey = "dateActe" | "libelle" | "montantActe";
-type EditableValue = string | number;
+type EditableKey = "dateActe" | "libelle" | "montantActe" | "acteId";
+type EditableValue = string | number | { libelle: string; acteId: number };
 
 function getChangedValues<T extends ReferencedRow>(original: T, current: T) {
 	const changes: T5Update = {
@@ -26,6 +28,7 @@ function getChangedValues<T extends ReferencedRow>(original: T, current: T) {
 	if (original.dateActe !== current.dateActe) changes.dateActe = current.dateActe;
 	if (original.libelle !== current.libelle) changes.libelle = current.libelle;
 	if (original.montantActe !== current.montantActe) changes.montantActe = current.montantActe;
+	if (original.acteId !== current.acteId) changes.acteId = current.acteId;
 	return changes;
 }
 
@@ -41,9 +44,12 @@ function isValidForCreate(row: ReferencedRow): boolean {
 export default function useT5RowsByRefSocial<T extends T5Row>(
 	sourceRows: T[] | undefined,
 	refSocial: string | undefined,
-	createEmptyRow: (id: number, refSocial: string) => T,
+	createEmptyRow: (id: number, refSocial: string, libelle?: string, acteId?: number, nomEtablissement?: string) => T,
 	table: T5TableKind,
 	canEditRows = true,
+	newRowLibelle = "",
+	newRowActeId?: number,
+	getCreatedRowValues?: (row: T, rows: T[]) => Partial<T>,
 ) {
 	const refreshLookup = useLookupRefresh();
 	const [storedRows, setStoredRows] = useState<T[] | null>(null);
@@ -53,16 +59,43 @@ export default function useT5RowsByRefSocial<T extends T5Row>(
 	const [activeIsNew, setActiveIsNew] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [saveError, setSaveError] = useState<string | null>(null);
+	const [factureEtablissement, setFactureEtablissement] = useState<{ refSocial: string; nom: string } | null>(null);
+
+	const loadEtablissement = useCallback(async () => {
+		if (!refSocial) return;
+		const sourceName = sourceRows?.find((row) => row.refSocial === refSocial)?.nomEtablissement ?? "";
+		try {
+			const factures = await getFactures();
+			const facture = factures.find((item) => item.refSociale === refSocial);
+			setFactureEtablissement({ refSocial, nom: facture?.prestataire.nom ?? sourceName });
+		} catch (error) {
+			setFactureEtablissement({ refSocial, nom: sourceName });
+			console.error("La recherche de la facture globale a échoué.", error);
+		}
+	}, [refSocial, sourceRows]);
+
+	useEffect(() => {
+		const timer = window.setTimeout(() => void loadEtablissement(), 0);
+		return () => window.clearTimeout(timer);
+	}, [loadEtablissement]);
 
 	const baseRows = useMemo(() => {
 		if (!sourceRows || !refSocial) return [];
-		const loadedRows = sourceRows.map((row) => ({ ...row }));
+		const sourceName = sourceRows.find((row) => row.refSocial === refSocial)?.nomEtablissement ?? "";
+		const nomEtablissement = factureEtablissement?.refSocial === refSocial
+			? factureEtablissement.nom
+			: sourceName;
+		const loadedRows = sourceRows.map((row) =>
+			row.refSocial === refSocial && nomEtablissement
+				? { ...row, nomEtablissement }
+				: { ...row },
+		);
 		if (!loadedRows.some((row) => row.refSocial === refSocial)) {
 			const nextId = Math.max(0, ...loadedRows.map((row) => row.id)) + 1;
-			loadedRows.push(createEmptyRow(nextId, refSocial));
+			loadedRows.push(createEmptyRow(nextId, refSocial, newRowLibelle, newRowActeId, nomEtablissement));
 		}
 		return loadedRows;
-	}, [createEmptyRow, refSocial, sourceRows]);
+	}, [createEmptyRow, factureEtablissement, newRowActeId, newRowLibelle, refSocial, sourceRows]);
 	const hasCurrentEdits = Boolean(
 		sourceRows && refSocial
 		&& editedSource?.rows === sourceRows
@@ -94,8 +127,11 @@ export default function useT5RowsByRefSocial<T extends T5Row>(
 		}
 
 		setSaveError(null);
+		const changes = key === "libelle" && typeof value === "object"
+			? value
+			: { [key]: value };
 		setStoredRows((current) => (current && sessionActiveRowId !== null ? current : rows).map((item) =>
-			item.id === rowId ? { ...item, [key]: value } as T : item,
+			item.id === rowId ? { ...item, ...changes } as T : item,
 		));
 	}, [activeRowId, canEditRows, editedSource, refSocial, rows, sourceRows]);
 
@@ -114,12 +150,13 @@ export default function useT5RowsByRefSocial<T extends T5Row>(
 		setSaveError(null);
 		try {
 			if (currentActiveIsNew) {
-				const { id, refSocial, dateActe, libelle, montantActe } = activeRow;
+				const { id, refSocial, acteId, dateActe, libelle, montantActe } = activeRow;
 				if (id !== currentActiveRowId) return false;
+				const calculatedValues = getCreatedRowValues?.(activeRow, rows) ?? {};
 				await createT5RowMock<T>(
 					table,
-					{ refSocial, dateActe, libelle, montantActe },
-					activeRow,
+					{ refSocial, acteId, dateActe, libelle, montantActe },
+					{ ...activeRow, ...calculatedValues },
 				);
 			} else {
 				const changes = getChangedValues(currentOriginalRow, activeRow);
@@ -148,7 +185,7 @@ export default function useT5RowsByRefSocial<T extends T5Row>(
 		} finally {
 			setIsSaving(false);
 		}
-	}, [activeRow, canEditRows, canSave, currentActiveIsNew, currentActiveRowId, currentOriginalRow, isSaving, refreshLookup, table]);
+	}, [activeRow, canEditRows, canSave, currentActiveIsNew, currentActiveRowId, currentOriginalRow, getCreatedRowValues, isSaving, refreshLookup, rows, table]);
 
 	const resetActiveRow = useCallback(() => {
 		if (!canEditRows) return;

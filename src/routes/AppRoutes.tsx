@@ -1,18 +1,24 @@
 import type { ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import Sidebar from "../components/layout/Sidebar";
-import LookupLayout from "../features/invoice/components/layout/LookupLayout"
+import LookupLayout from "../features/invoice/components/layout/LookupLayout";
 import AgentPage from "../pages/AgentPage";
 import BeneficiairePage from "../pages/BeneficiairePage";
 import DeletionRequestsPage from "../pages/DeletionRequestsPage";
 import PrestatairePage from "../pages/PrestatairePage";
 import PriseEnChargePage from "../pages/PriseEnChargePage";
 import ReferentielsPage from "../pages/ReferentielsPage";
-import InvoicePage  from "../pages/InvoicePage"
+import InvoicePage from "../pages/InvoicePage";
+import T6Page from "../pages/T6Page";
 import T5ParAnPage from "../pages/T5ParAn";
 import T5ParAnParActePage from "../pages/T5ParAnParActe";
 import T5ParSeancePage from "../pages/T5ParSeance";
 import T5XConfigurationPage from "../pages/T5XConfiguration";
+import AssistantGlobalPage from "../pages/AssistantGlobalPage";
+import UserManagementPage from "../pages/UserManagementPage";
+import RoleManagementPage from "../pages/RoleManagementPage";
+import PaiePage from "../pages/PaiePage";
+import DashboardPage from "../pages/DashboardPage";
 import { fetchIdpLookupMock } from "../features/invoice/mocks/idpLookup";
 import { ROUTES } from "../constants/routes";
 
@@ -23,18 +29,125 @@ function AppShell({ children }: { children: ReactNode }) {
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path={ROUTES.home} element={<Navigate to={ROUTES.agents} replace />} />
-      <Route path={ROUTES.agents} element={<AppShell><AgentPage /></AppShell>} />
-      <Route path={ROUTES.beneficiaries} element={<AppShell><BeneficiairePage /></AppShell>} />
-      <Route path={ROUTES.providers} element={<AppShell><PrestatairePage /></AppShell>} />
-      <Route path={ROUTES.coverage} element={<AppShell><PriseEnChargePage /></AppShell>} />
-      <Route path={ROUTES.referentials} element={<AppShell><ReferentielsPage /></AppShell>} />
-      <Route path={ROUTES.deletionRequests} element={<AppShell><DeletionRequestsPage /></AppShell>} />
-      <Route path={ROUTES.invoice} element={<AppShell><InvoicePage></InvoicePage></AppShell>} />
-      <Route path={ROUTES.T5X} element={<AppShell><T5XConfigurationPage /></AppShell>} />
-      <Route path={ROUTES.T5ParAn} element={<LookupLayout onSearchIdp={fetchIdpLookupMock}><T5ParAnPage /></LookupLayout>} />
-      <Route path={ROUTES.T5ParAnParActe} element={<LookupLayout onSearchIdp={fetchIdpLookupMock}><T5ParAnParActePage /></LookupLayout>} />
-      <Route path={ROUTES.T5Parseance} element={<LookupLayout onSearchIdp={fetchIdpLookupMock}><T5ParSeancePage /></LookupLayout>} />
+      <Route
+        path={ROUTES.home}
+        element={<Navigate to={ROUTES.dashboard} replace />}
+      />
+      <Route path={ROUTES.dashboard} element={<AppShell><DashboardPage /></AppShell>} />
+      <Route
+        path={ROUTES.agents}
+        element={
+          <AppShell>
+            <AgentPage />
+          </AppShell>
+        }
+      />
+      <Route
+        path={ROUTES.beneficiaries}
+        element={
+          <AppShell>
+            <BeneficiairePage />
+          </AppShell>
+        }
+      />
+      <Route
+        path={ROUTES.providers}
+        element={
+          <AppShell>
+            <PrestatairePage />
+          </AppShell>
+        }
+      />
+      <Route
+        path={ROUTES.coverage}
+        element={
+          <AppShell>
+            <PriseEnChargePage />
+          </AppShell>
+        }
+      />
+      <Route
+        path={ROUTES.referentials}
+        element={
+          <AppShell>
+            <ReferentielsPage />
+          </AppShell>
+        }
+      />
+      <Route
+        path={ROUTES.users}
+        element={
+          <AppShell>
+            <UserManagementPage />
+          </AppShell>
+        }
+      />
+      <Route
+        path={ROUTES.roles}
+        element={
+          <AppShell>
+            <RoleManagementPage />
+          </AppShell>
+        }
+      />
+      <Route
+        path={ROUTES.deletionRequests}
+        element={
+          <AppShell>
+            <DeletionRequestsPage />
+          </AppShell>
+        }
+      />
+      <Route
+        path={ROUTES.invoice}
+        element={
+          <AppShell>
+            <InvoicePage></InvoicePage>
+          </AppShell>
+        }
+      />
+      <Route
+        path={ROUTES.invoiceT6}
+        element={
+          <AppShell>
+            <T6Page />
+          </AppShell>
+        }
+      />
+      <Route path={ROUTES.paie} element={<AppShell><PaiePage /></AppShell>} />
+      <Route path={ROUTES.assistant} element={<AppShell><AssistantGlobalPage /></AppShell>} />
+      <Route
+        path={ROUTES.T5X}
+        element={
+          <AppShell>
+            <T5XConfigurationPage />
+          </AppShell>
+        }
+      />
+      <Route
+        path={ROUTES.T5ParAn}
+        element={
+          <LookupLayout onSearchIdp={fetchIdpLookupMock}>
+            <T5ParAnPage />
+          </LookupLayout>
+        }
+      />
+      <Route
+        path={ROUTES.T5ParAnParActe}
+        element={
+          <LookupLayout onSearchIdp={fetchIdpLookupMock}>
+            <T5ParAnParActePage />
+          </LookupLayout>
+        }
+      />
+      <Route
+        path={ROUTES.T5Parseance}
+        element={
+          <LookupLayout onSearchIdp={fetchIdpLookupMock}>
+            <T5ParSeancePage />
+          </LookupLayout>
+        }
+      />
       <Route path="*" element={<Navigate to={ROUTES.agents} replace />} />
     </Routes>
   );

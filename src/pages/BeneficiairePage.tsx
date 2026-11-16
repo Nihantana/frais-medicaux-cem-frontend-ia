@@ -1,4 +1,11 @@
-import { MessageSquare, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
+import {
+	Copy,
+	MessageSquare,
+	Plus,
+	RefreshCw,
+	Search,
+	Trash2,
+} from "lucide-react";
 import { useCallback, useState, type FormEvent } from "react";
 import {
 	BeneficiaryEditForm,
@@ -226,12 +233,32 @@ export default function BeneficiairePage() {
 		}
 	}
 
+	async function handleCopyIdp(idp: string): Promise<void> {
+		try {
+			await navigator.clipboard.writeText(idp);
+			notify("IDP copié.");
+		} catch {
+			notify("Impossible de copier l'IDP.", "error");
+		}
+	}
+
 	const columns: Column<BeneficiaryRow>[] = [
 		{
 			key: "idp",
 			label: "IDP",
 			render: (row) => (
-				<span className="font-mono text-xs font-bold">{row.idp}</span>
+				<span className="inline-flex items-center gap-1.5">
+					<span className="font-mono text-xs font-bold">{row.idp}</span>
+					<button
+						type="button"
+						className="btn-ghost p-1"
+						title="Copier l'IDP"
+						aria-label={`Copier l'IDP ${row.idp}`}
+						onClick={() => void handleCopyIdp(row.idp)}
+					>
+						<Copy size={14} />
+					</button>
+				</span>
 			),
 		},
 		{

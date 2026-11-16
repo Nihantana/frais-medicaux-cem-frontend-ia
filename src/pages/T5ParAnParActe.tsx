@@ -8,15 +8,16 @@ import type {
 } from "../features/invoice/types/t5ParAnParActe";
 import useT5RowsByRefSocial from "../features/invoice/hooks/useT5RowsByRefSocial";
 import useT5Cible from "../features/invoice/hooks/useT5Cible";
+import useT5Actes from "../features/invoice/hooks/useT5Actes";
 import { TypeContrainte, type CibleType } from "../features/invoice/types/dropDown";
 import { ErrorBlock, LoadingState } from "../components/ui";
 import { useAuth } from "../features/auth";
 
-function createEmptyParAnParActeRow(id: number, refSocial: string): T5ParAnParActeRow {
+function createEmptyParAnParActeRow(id: number, refSocial: string, libelle = "", acteId?: number, nomEtablissement = ""): T5ParAnParActeRow {
 	return {
-		id, refSocial, dateActe: "", libelle: "", montantActe: 0, depassementActe: 0,
+		id, acteId, refSocial, dateActe: "", libelle, montantActe: 0, depassementActe: 0,
 		cumulActeConsomme: 0, soldePlafond: 0, depassementPlafond: 0,
-		totalDepassement: 0, nomEtablissement: "",
+		totalDepassement: 0, nomEtablissement,
 	};
 }
 
@@ -29,10 +30,12 @@ export default function T5ParAnParActe() {
 	const [searchParams] = useSearchParams();
 	const cibleType: CibleType = searchParams.get("type") === "acte" ? "acte" : "categorie";
 	const { cible, isLoading: isCibleLoading, error: cibleError, reload: reloadCible } = useT5Cible(id, cibleType);
+	const categorieId = cible?.type === "categorie" ? cible.categorieActeId ?? cible.id : undefined;
+	const { actes, isLoading: isActesLoading, error: actesError, reload: reloadActes } = useT5Actes(categorieId);
 	const lookupResult = useLookupResult();
 	const isLookupLoading = useLookupLoading();
 	const { role } = useAuth();
-	const canEditRows = role !== "Y";
+	const canEditRows = role !== "CHEF";
 	const {
 		rows,
 		isReady,
@@ -49,6 +52,8 @@ export default function T5ParAnParActe() {
 		createEmptyParAnParActeRow,
 		"parAnParActe",
 		canEditRows,
+		cible?.type === "acte" ? cible.label : "",
+		cible?.type === "acte" ? cible.id : undefined,
 	);
 	const navigate = useNavigate();
 	if (isCibleLoading) return <LoadingState message="Chargement de la configuration T5…" />;
@@ -56,6 +61,8 @@ export default function T5ParAnParActe() {
 	if (!cible || cible.typeContrainte !== TypeContrainte.PAR_AN_PAR_ACTE) {
 		return <ErrorBlock message="La cible chargée ne correspond pas à un T5 par an et par acte." onRetry={() => void reloadCible()} />;
 	}
+	if (isActesLoading) return <LoadingState message="Chargement des actes de la catégorie…" />;
+	if (actesError) return <ErrorBlock message={actesError} onRetry={() => void reloadActes()} />;
 	const pageTitle = cible.label || label || "T5 par an et par acte";
 
 	return (
@@ -99,6 +106,9 @@ export default function T5ParAnParActe() {
 							focusRefSocial={refSocial}
 							activeRowId={activeRowId}
 							canEditRows={canEditRows}
+							targetType={cible.type}
+							targetLabel={cible.label}
+							actes={actes}
 						/>
 					</>
 				)}

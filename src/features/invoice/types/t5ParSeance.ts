@@ -1,5 +1,6 @@
 export type T5ParSeanceRow = {
 	id: number;
+	acteId?: number;
 	refSocial: string;
 	dateActe: string;
 	libelle: string;
@@ -22,9 +23,12 @@ export type T5ParSeanceTableProps = {
 	focusRefSocial?: string;
 	activeRowId?: number | null;
 	canEditRows?: boolean;
+	targetType?: "acte" | "categorie";
+	targetLabel?: string;
+	actes?: Array<{ id: number; label: string }>;
 	onCellChange: (
 		rowId: number,
-		key: Extract<T5ParSeanceColumnKey, "dateActe" | "libelle" | "montantActe">,
-		value: string | number,
+		key: Extract<T5ParSeanceColumnKey | "acteId", "dateActe" | "libelle" | "montantActe" | "acteId">,
+		value: string | number | { libelle: string; acteId: number },
 	) => void;
 };

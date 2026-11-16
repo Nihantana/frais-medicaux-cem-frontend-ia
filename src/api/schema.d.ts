@@ -1268,6 +1268,104 @@ export interface paths {
         patch: operations["RegleController_modifier"];
         trace?: never;
     };
+    "/factures/{id}/controle-visuel/assistant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Poser une question à l’assistant de facture
+         * @description Répond à partir des données de la facture et du dernier rapport de contrôle visuel. L’assistant ne prend aucune décision métier.
+         */
+        post: operations["VerificationFactureController_questionner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/factures/{id}/controle-visuel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulter le dernier contrôle visuel */
+        get: operations["VerificationFactureController_obtenir"];
+        put?: never;
+        /**
+         * Lancer le contrôle visuel assisté
+         * @description Extrait les données des pièces jointes, applique les contrôles déterministes et conserve le rapport. La décision humaine reste nécessaire.
+         */
+        post: operations["VerificationFactureController_lancer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/factures/{id}/controle-visuel/confirmation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirmer manuellement le contrôle visuel
+         * @description Autorise le traitement ultérieur de la facture après examen humain du rapport.
+         */
+        post: operations["VerificationFactureController_confirmer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/factures/{id}/controle-visuel/retour": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retourner la facture au prestataire
+         * @description Passe la facture à RETOURNEE et conserve le motif dans le mouvement de workflow.
+         */
+        post: operations["VerificationFactureController_retourner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Retourner l'utilisateur connecté */
+        get: operations["AuthController_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/factures": {
         parameters: {
             query?: never;
@@ -1479,7 +1577,7 @@ export interface paths {
         head?: never;
         /**
          * Exécuter une action sur une facture
-         * @description Applique une action métier autorisée et retourne la facture ainsi que le mouvement créé.
+         * @description Applique une action métier autorisée et retourne la facture ainsi que le mouvement créé. Choisir un exemple selon le type de mouvement.
          */
         patch: operations["FactureWorkflowController_modifierStatut"];
         trace?: never;
@@ -1745,6 +1843,104 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/utilisateurs/permissions/catalogue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lister le catalogue des permissions */
+        get: operations["UtilisateurController_cataloguePermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilisateurs/roles/catalogue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lister les rôles configurables */
+        get: operations["UtilisateurController_catalogueRoles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilisateurs/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["UtilisateurController_creerRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilisateurs/roles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["UtilisateurController_supprimerRole"];
+        options?: never;
+        head?: never;
+        patch: operations["UtilisateurController_modifierRole"];
+        trace?: never;
+    };
+    "/utilisateurs/roles/{id}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["UtilisateurController_permissionsRole"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilisateurs/roles/{id}/permissions/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UtilisateurController_modifierPermissionRole"];
+        post?: never;
+        delete: operations["UtilisateurController_reinitialiserPermissionRole"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/utilisateurs/{id}": {
         parameters: {
             query?: never;
@@ -1771,6 +1967,50 @@ export interface paths {
          * @description Met à jour les informations fournies pour un utilisateur.
          */
         patch: operations["UtilisateurController_modifier"];
+        trace?: never;
+    };
+    "/utilisateurs/{id}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lister les permissions effectives
+         * @description Retourne les permissions par défaut du rôle et les éventuelles exceptions.
+         */
+        get: operations["UtilisateurController_permissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilisateurs/{id}/permissions/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Définir une permission personnalisée
+         * @description Crée ou remplace une exception au rôle par défaut.
+         */
+        put: operations["UtilisateurController_modifierPermission"];
+        post?: never;
+        /**
+         * Réinitialiser une permission
+         * @description Supprime l’exception et restaure la valeur du rôle.
+         */
+        delete: operations["UtilisateurController_reinitialiserPermission"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
 }
@@ -2047,11 +2287,33 @@ export interface components {
             modeleSuivi: "PLAFOND_ANNUEL" | "SEANCES" | "PLAFOND_ACTE_ET_ANNUEL" | null;
         };
         UpdateActeDto: {
-            code?: string;
-            nomActe?: string;
-            listeLibelle?: string;
+            /**
+             * Format: date
+             * @example 2026-01-15
+             */
+            dateEffet?: string;
+            /** Format: date */
+            dateFin?: string | null;
             /** @enum {string} */
+            porteePlafond?: "PAR_ACTE" | "PAR_AN";
+            /** @enum {string} */
+            unite?: "MONTANT" | "SEANCES";
+            montant?: number | null;
+            nbSeances?: number | null;
+            acteID?: number | null;
+            categorieActeID?: number | null;
+            /** @example CON-01 */
+            code?: string;
+            /** @example Consultation généraliste */
+            nomActe?: string;
+            /** @example Consultation généraliste */
+            listeLibelle?: string;
+            /**
+             * @example NORMAL
+             * @enum {string}
+             */
             regime?: "NORMAL" | "EXCLU" | "SUR_DECISION_DG";
+            /** @example 12 */
             categorieActeId?: number;
         };
         CreatePlafondDto: {
@@ -2120,6 +2382,7 @@ export interface components {
         };
         AttestationResponseDto: {
             id: number;
+            reference: string;
             attestationPath: string | null;
             /** Format: date-time */
             dateValidation: string | null;
@@ -2282,6 +2545,21 @@ export interface components {
             nbSeances: number;
         };
         UpdateCategorieActeDto: {
+            /**
+             * Format: date
+             * @example 2026-01-15
+             */
+            dateEffet?: string;
+            /** Format: date */
+            dateFin?: string | null;
+            /** @enum {string} */
+            porteePlafond?: "PAR_ACTE" | "PAR_AN";
+            /** @enum {string} */
+            unite?: "MONTANT" | "SEANCES";
+            montant?: number | null;
+            nbSeances?: number | null;
+            acteID?: number | null;
+            categorieActeID?: number | null;
             nomCategorie?: string;
         };
         CreateProviderCategoryDto: {
@@ -2337,9 +2615,87 @@ export interface components {
             dateEffet?: string;
             dateFin?: string | null;
         };
+        QuestionAssistantFactureDto: {
+            /**
+             * @description Question de l’utilisateur au sujet de la facture.
+             * @example Pourquoi cette facture a-t-elle été signalée ?
+             */
+            question: string;
+        };
+        ReponseAssistantFactureDto: {
+            reponse: string;
+            sources: string[];
+            avertissement: string;
+        };
+        ExtractionFactureResponseDto: {
+            destinataire: string | null;
+            montantChiffres: number | null;
+            montantLettres: string | null;
+            montantLettresValeur: number | null;
+            prestataire: string | null;
+            beneficiaire: string | null;
+            numeroFacture: string | null;
+            dateFacture: string | null;
+            actes: string[];
+        };
+        ResultatControleResponseDto: {
+            code: string;
+            /** @enum {string} */
+            statut: "CONFORME" | "ANOMALIE" | "A_VERIFIER" | "NON_APPLICABLE";
+            /** @enum {string} */
+            gravite: "INFORMATION" | "MINEURE" | "MAJEURE" | "BLOQUANTE";
+            valeurAttendue: string | null;
+            valeurTrouvee: string | null;
+            preuve?: string | null;
+            confiance: number | null;
+            confirme: boolean;
+        };
+        RapportControleVisuelResponseDto: {
+            id: number;
+            factureGlobaleId: number;
+            /** @enum {string} */
+            statut: "A_VERIFIER" | "EN_COURS" | "ANOMALIE" | "CONFORME" | "ERREUR";
+            score: number | null;
+            extraction: components["schemas"]["ExtractionFactureResponseDto"] | null;
+            resultats: components["schemas"]["ResultatControleResponseDto"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            confirmeParId: number | null;
+            /** Format: date-time */
+            confirmeLe: string | null;
+        };
+        RetourControleVisuelDto: {
+            /**
+             * @description Motif détaillé du retour au prestataire.
+             * @example Le montant en chiffres ne correspond pas au montant en lettres.
+             */
+            remarque: string;
+        };
         PrestataireFactureResponseDto: {
             id: number;
             nom: string;
+        };
+        UtilisateurMouvementResponseDto: {
+            id: number;
+            nom: string;
+            /** @enum {string} */
+            role: "OPERATEUR" | "ADJOINT" | "CHEF" | "ADMINISTRATEUR";
+        };
+        MouvementFactureListeResponseDto: {
+            id: number;
+            /** @enum {string} */
+            type: "ENREGISTREMENT" | "ENVOI_VALIDATION" | "RETOUR_POUR_CORRECTION" | "RETOUR_PRESTATAIRE" | "RECEPTION_APRES_MODIFICATION" | "MODIFICATION" | "VALIDATION" | "SORTIE" | "SUPPRESSION" | "REOUVERTURE" | "DEMANDE_SUPPRESSION" | "REFUS_SUPPRESSION" | "CLOTURE";
+            /** Format: date-time */
+            date: string;
+            /** Format: date-time */
+            createdAt: string;
+            remarque: string | null;
+            /** @enum {string|null} */
+            service: "AUTHENTIFICATION" | "CONTROLE" | null;
+            effectuePar: components["schemas"]["UtilisateurMouvementResponseDto"];
+            adresseA: components["schemas"]["UtilisateurMouvementResponseDto"] | null;
         };
         PieceJointeListeFactureResponseDto: {
             id: number;
@@ -2387,6 +2743,7 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             prestataire: components["schemas"]["PrestataireFactureResponseDto"];
+            mouvements: components["schemas"]["MouvementFactureListeResponseDto"][];
             piecesJointes: components["schemas"]["PieceJointeListeFactureResponseDto"][];
         };
         FactureGlobaleDetailResponseDto: {
@@ -2428,6 +2785,7 @@ export interface components {
             updatedAt: string;
             prestataire: components["schemas"]["PrestataireFactureResponseDto"];
             nombrePiecesJointes: number;
+            mouvements: components["schemas"]["MouvementFactureListeResponseDto"][];
         };
         FactureGlobaleCreeeResponseDto: {
             id: number;
@@ -2468,12 +2826,6 @@ export interface components {
             updatedAt: string;
             prestataire: components["schemas"]["PrestataireFactureResponseDto"];
             avertissements: string[];
-        };
-        UtilisateurMouvementResponseDto: {
-            id: number;
-            nom: string;
-            /** @enum {string} */
-            role: "OPERATEUR" | "ADJOINT" | "CHEF";
         };
         MouvementFactureResponseDto: {
             id: number;
@@ -2548,7 +2900,17 @@ export interface components {
             libelle: string;
             /** Format: date */
             dateActe: string;
+            /** Format: date-time */
+            dateSaisie: string;
             idp: string;
+            nomPrenomBeneficiaire: string;
+            /** @enum {string|null} */
+            codeFam: "AGT" | "CJT" | "EFT" | null;
+            obsIdp: string | null;
+            im: number | null;
+            nomPrenomAgent: string | null;
+            codeDirection: string | null;
+            categorieAgent: string | null;
             acte: components["schemas"]["LigneActeResponseDto"];
             montantActe: string;
             montantDepassementActe: string;
@@ -2573,6 +2935,7 @@ export interface components {
             idp?: string;
             acteId?: number;
             numPec?: number;
+            refPaie?: string | null;
             montantActe?: number;
             montantDepassementActe?: number;
             montantDepassementPlafond?: number;
@@ -2919,6 +3282,47 @@ export interface components {
             /** @enum {string} */
             modeleSuivi: "PLAFOND_ANNUEL" | "SEANCES" | "PLAFOND_ACTE_ET_ANNUEL";
         };
+        ActeLigneSuiviResponseDto: {
+            code: string;
+            nom: string;
+        };
+        LigneFeuilleSuiviResponseDto: {
+            id: number;
+            refSociale: string;
+            /** Format: date */
+            dateActe: string;
+            libelle: string;
+            acte: components["schemas"]["ActeLigneSuiviResponseDto"];
+            montantActe: string;
+            depassementActe: string | null;
+            cumulActeConsomme: string | null;
+            soldePlafond: string | null;
+            depassementPlafond: string | null;
+            totalDepassement: string;
+            nomEtablissement: string;
+            libelleSeance: string | null;
+            numeroSeance: number | null;
+            plafondAnnuelApplique: string;
+            capaciteRestante: string | null;
+            seancesRestantes: string | null;
+            verrouillee: boolean;
+        };
+        TotauxFeuilleSuiviResponseDto: {
+            montantActe: string;
+            totalDepassement: string;
+            depassementActe?: string;
+            depassementPlafond?: string;
+            cumulActeConsomme?: string | null;
+            soldePlafond?: string | null;
+            seancesUtilisees?: number;
+        };
+        FeuilleSuiviCompacteResponseDto: {
+            /** @enum {string} */
+            modele: "PLAFOND_ANNUEL" | "SEANCES" | "PLAFOND_ACTE_ET_ANNUEL";
+            annee: number;
+            lignes: components["schemas"]["LigneFeuilleSuiviResponseDto"][];
+            totaux: components["schemas"]["TotauxFeuilleSuiviResponseDto"];
+        };
         EnteteFeuilleSuiviResponseDto: {
             idp: string;
             im: number | null;
@@ -2959,40 +3363,6 @@ export interface components {
             parActe: components["schemas"]["PlafondFeuilleSuiviResponseDto"] | null;
             parAn: components["schemas"]["PlafondAnnuelFeuilleSuiviResponseDto"];
             historique?: components["schemas"]["VersionPlafondResponseDto"][];
-        };
-        ActeLigneSuiviResponseDto: {
-            code: string;
-            nom: string;
-        };
-        LigneFeuilleSuiviResponseDto: {
-            id: number;
-            refSociale: string;
-            /** Format: date */
-            dateActe: string;
-            libelle: string;
-            acte: components["schemas"]["ActeLigneSuiviResponseDto"];
-            montantActe: string;
-            depassementActe: string | null;
-            cumulActeConsomme: string | null;
-            soldePlafond: string | null;
-            depassementPlafond: string | null;
-            totalDepassement: string;
-            nomEtablissement: string;
-            libelleSeance: string | null;
-            numeroSeance: number | null;
-            plafondAnnuelApplique: string;
-            capaciteRestante: string | null;
-            seancesRestantes: string | null;
-            verrouillee: boolean;
-        };
-        TotauxFeuilleSuiviResponseDto: {
-            montantActe: string;
-            totalDepassement: string;
-            depassementActe?: string;
-            depassementPlafond?: string;
-            cumulActeConsomme?: string | null;
-            soldePlafond?: string | null;
-            seancesUtilisees?: number;
         };
         FeuilleSuiviResponseDto: {
             entete: components["schemas"]["EnteteFeuilleSuiviResponseDto"];
@@ -3038,13 +3408,26 @@ export interface components {
         UtilisateurResponseDto: {
             id: number;
             nom: string;
-            /** @enum {string} */
-            role: "OPERATEUR" | "ADJOINT" | "CHEF";
+            email: string | null;
+            roles: string[];
+        };
+        CreerRoleDto: {
+            code: string;
+            libelle: string;
+        };
+        ModifierRoleDto: {
+            libelle?: string;
+        };
+        ModifierPermissionDto: {
+            autorisee: boolean;
         };
         CreerUtilisateurDto: {
             nom: string;
+            /** Format: email */
+            email: string;
             /** @enum {string} */
-            role: "OPERATEUR" | "ADJOINT" | "CHEF";
+            role?: "OPERATEUR" | "ADJOINT" | "CHEF" | "ADMINISTRATEUR";
+            roles?: string[];
         };
         UtilisateurReponseAvecMessageDto: {
             message: string;
@@ -3052,8 +3435,11 @@ export interface components {
         };
         ModifierUtilisateurDto: {
             nom?: string;
+            /** Format: email */
+            email?: string;
             /** @enum {string} */
-            role?: "OPERATEUR" | "ADJOINT" | "CHEF";
+            role?: "OPERATEUR" | "ADJOINT" | "CHEF" | "ADMINISTRATEUR";
+            roles?: string[];
         };
         MessageResponseDto: {
             message: string;
@@ -4366,7 +4752,7 @@ export interface operations {
                     nomActe: string;
                     listeLibelle: string;
                     /** @enum {string} */
-                    regime?: "NORMAL" | "EXCLU" | "SUR_DECISION_DG";
+                    regime: "NORMAL" | "EXCLU" | "SUR_DECISION_DG";
                     categorieActeId: number;
                     plafonds?: {
                         parActe?: {
@@ -4389,7 +4775,7 @@ export interface operations {
                     nomActe: string;
                     listeLibelle: string;
                     /** @enum {string} */
-                    regime?: "NORMAL" | "EXCLU" | "SUR_DECISION_DG";
+                    regime: "NORMAL" | "EXCLU" | "SUR_DECISION_DG";
                     categorieActeId: number;
                 };
             };
@@ -5530,6 +5916,178 @@ export interface operations {
             };
         };
     };
+    VerificationFactureController_questionner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionAssistantFactureDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReponseAssistantFactureDto"];
+                };
+            };
+        };
+    };
+    VerificationFactureController_obtenir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RapportControleVisuelResponseDto"];
+                };
+            };
+            /** @description Facture ou contrôle visuel introuvable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VerificationFactureController_lancer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RapportControleVisuelResponseDto"];
+                };
+            };
+            /** @description Facture ou pièce jointe introuvable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ollama a retourné une réponse invalide. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tesseract ou Ollama est indisponible. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VerificationFactureController_confirmer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RapportControleVisuelResponseDto"];
+                };
+            };
+            /** @description Le contrôle contient une anomalie ou est encore en cours. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VerificationFactureController_retourner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetourControleVisuelDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RapportControleVisuelResponseDto"];
+                };
+            };
+            /** @description Le statut actuel de la facture ne permet pas son retour. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     FactureGlobaleController_lister: {
         parameters: {
             query?: {
@@ -6081,7 +6639,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FeuilleSuiviResponseDto"];
+                    "application/json": components["schemas"]["FeuilleSuiviCompacteResponseDto"];
                 };
             };
         };
@@ -6112,7 +6670,10 @@ export interface operations {
         parameters: {
             query: {
                 idp: string;
-                acteId: string;
+                /** @description Cible acte; à fournir à la place de categorieActeId. */
+                acteId?: number;
+                /** @description Cible catégorie; à fournir à la place de acteId. */
+                categorieActeId?: number;
                 annee?: string;
                 factureId?: string;
                 /** @description Expose les dates et versions historiques des plafonds. */
@@ -6129,7 +6690,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FeuilleSuiviResponseDto"];
+                    "application/json": components["schemas"]["FeuilleSuiviCompacteResponseDto"];
                 };
             };
         };
@@ -6371,6 +6932,166 @@ export interface operations {
             };
         };
     };
+    UtilisateurController_cataloguePermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UtilisateurController_catalogueRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UtilisateurController_creerRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreerRoleDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UtilisateurController_supprimerRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UtilisateurController_modifierRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierRoleDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UtilisateurController_permissionsRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UtilisateurController_modifierPermissionRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierPermissionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UtilisateurController_reinitialiserPermissionRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     UtilisateurController_obtenir: {
         parameters: {
             query?: never;
@@ -6434,6 +7155,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UtilisateurReponseAvecMessageDto"];
+                };
+            };
+        };
+    };
+    UtilisateurController_permissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UtilisateurController_modifierPermission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierPermissionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UtilisateurController_reinitialiserPermission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponseDto"];
                 };
             };
         };

@@ -9,12 +9,13 @@ export type T5Row = IdpLookupResult["t5Data"][T5TableKind][number];
 
 export type T5Update = {
 	refSocial: string;
+	acteId?: number;
 	dateActe?: string;
 	libelle?: string;
 	montantActe?: number;
 };
 
-export type T5WriteInput = Pick<T5Update, "refSocial" | "dateActe" | "libelle" | "montantActe">;
+export type T5WriteInput = Pick<T5Update, "refSocial" | "acteId" | "dateActe" | "libelle" | "montantActe">;
 
 let t5Rows: IdpLookupResult["t5Data"] | null = null;
 

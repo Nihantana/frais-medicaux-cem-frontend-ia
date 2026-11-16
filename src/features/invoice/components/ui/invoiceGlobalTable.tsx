@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { Search, X } from "lucide-react";
+import { MoreHorizontal, Search, X } from "lucide-react";
 import { factureGlobaleColumns } from "../../data/tableColumn";
 import DropDownCell from "./dropDownCell";
 import EditableDateCell from "./editableDateCell";
 import EditableMonthCell from "./editableMonthCell";
 import { EditableNumberCell, EditableStringCell } from "../../../../components/ui";
+import { Badge } from "../../../../components/ui/Badge";
 import {
     FACTURE_GLOBALE_UPDATE_KEYS,
     numberColumn,
@@ -35,6 +36,37 @@ import type {
 const editableUpdateKeys = new Set<string>(personnelFactureGlobaleEditableColumns);
 const updateKeys = new Set<string>(FACTURE_GLOBALE_UPDATE_KEYS);
 const amountFormatter = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
+
+const STATUS_LABELS: Record<string, string> = {
+    ENREGISTREE: "Enregistrée",
+    EN_VALIDATION: "En validation",
+    RETOURNEE: "Retournée",
+    VALIDEE: "Validée",
+    SORTIE: "Sortie",
+    A_CORRIGER: "À corriger",
+    SUPPRESSION_DEMANDEE: "Suppression demandée",
+    SUPPRIMEE: "Supprimée",
+};
+
+function statusTone(status: string): "green" | "amber" | "red" | "blue" | "slate" {
+    if (status === "VALIDEE") return "green";
+    if (status === "EN_VALIDATION") return "blue";
+    if (status === "RETOURNEE" || status === "A_CORRIGER") return "amber";
+    if (status === "SUPPRESSION_DEMANDEE" || status === "SUPPRIMEE") return "red";
+    return "slate";
+}
+
+function renderStatusCell(row: FactureGlobaleRow, cellClass: string) {
+    return (
+        <td key="statut" className={cellClass}>
+            {row.statut ? (
+                <Badge tone={statusTone(row.statut)}>
+                    {STATUS_LABELS[row.statut] ?? row.statut.replaceAll("_", " ")}
+                </Badge>
+            ) : null}
+        </td>
+    );
+}
 
 function filterableFiltersActive(
     filters: FactureGlobaleFilters["text"],
@@ -79,9 +111,10 @@ export default function FactureGlobaleTable({
     onAddAttachment,
     onRemoveAttachment,
     onDownloadAttachment,
+    onOpenActions,
 }: FactureGlobaleTableProps) {
     const { role } = useAuth();
-    const isRoleY = role === "Y";
+    const isRoleY = role === "CHEF";
 
     const [openFilter, setOpenFilter] = useState<string | null>(null);
     const [pinnedFilter, setPinnedFilter] = useState<DateFilterKey | null>(null);
@@ -175,9 +208,9 @@ export default function FactureGlobaleTable({
 
     return (
         <div ref={containerRef} className="min-h-0 flex-1 overflow-auto">
-            <table className="h-fit w-max min-w-full table-fixed border-collapse text-sm">
+            <table className="h-fit w-max min-w-full table-fixed border-collapse text-[13px]">
 
-                <thead className="sticky top-0 z-10 bg-slate-900 text-white">
+                <thead className="sticky top-0 z-10 bg-slate-50 text-left text-slate-600 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
                     <tr>
                         {factureGlobaleColumns.map((column) => {
 
@@ -194,7 +227,7 @@ export default function FactureGlobaleTable({
                             return (
                                 <th
                                     key={column.key}
-                                    className={`relative border border-slate-700 px-3 py-3 text-left text-[10px] font-extrabold uppercase tracking-wide ${column.width} ${filterable ? "cursor-pointer" : ""} ${column.key === "majT5" ? "bg-yellow-300 text-red-800" : ""} ${isOpen ? "z-30" : ""}`}
+                                    className={`relative border-b border-slate-200 px-4 py-3 text-left text-[10px] font-extrabold uppercase tracking-wide ${column.width} ${filterable ? "cursor-pointer hover:bg-slate-100" : ""} ${column.key === "majT5" ? "bg-amber-50 text-amber-800" : ""} ${isOpen ? "z-30" : ""}`}
                                     onMouseEnter={() => filterable && (!pinnedFilter || pinnedFilter === column.key) && setOpenFilter(column.key)}
                                     onMouseLeave={() => isOpen && pinnedFilter !== column.key && setOpenFilter(null)}
                                     aria-expanded={filterable ? isOpen : undefined}
@@ -215,7 +248,7 @@ export default function FactureGlobaleTable({
                                                         <select
                                                             aria-label="Filtrer par mois de prestation"
                                                             value={monthPrestationFilter.month}
-                                                            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-2 text-xs font-normal normal-case outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-2 text-xs font-normal normal-case outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
                                                             onChange={(event) => setMonthPrestationFilter((current) => ({
                                                                 ...current,
                                                                 month: event.target.value,
@@ -232,7 +265,7 @@ export default function FactureGlobaleTable({
                                                         <select
                                                             aria-label="Filtrer par année de prestation"
                                                             value={monthPrestationFilter.year}
-                                                            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-2 text-xs font-normal normal-case outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-2 text-xs font-normal normal-case outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
                                                             onChange={(event) => setMonthPrestationFilter((current) => ({
                                                                 ...current,
                                                                 year: event.target.value,
@@ -259,7 +292,7 @@ export default function FactureGlobaleTable({
                                                         type="search"
                                                         placeholder={`Rechercher ${column.label.toLocaleLowerCase()}…`}
                                                         value={textFilters[textKey] ?? ""}
-                                                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs font-normal normal-case outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs font-normal normal-case outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
                                                         onChange={(event) => setTextFilters((current) => ({
                                                             ...current,
                                                             [textKey]: event.target.value
@@ -284,7 +317,7 @@ export default function FactureGlobaleTable({
                                                             setOpenFilter(dateKey);
                                                         }}
                                                         value={dateDrafts[dateKey]?.from ?? dateFilters[dateKey]?.from ?? ""}
-                                                        className="w-full rounded-md border border-slate-300 px-2 py-2 text-xs font-normal normal-case outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                        className="w-full rounded-md border border-slate-300 px-2 py-2 text-xs font-normal normal-case outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
                                                         onChange={(event) => setDateDrafts((current) => ({
                                                             ...current,
                                                             [dateKey]: {
@@ -302,7 +335,7 @@ export default function FactureGlobaleTable({
                                                             setOpenFilter(dateKey);
                                                         }}
                                                         value={dateDrafts[dateKey]?.to ?? dateFilters[dateKey]?.to ?? ""}
-                                                        className="w-full rounded-md border border-slate-300 px-2 py-2 text-xs font-normal normal-case outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                        className="w-full rounded-md border border-slate-300 px-2 py-2 text-xs font-normal normal-case outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
                                                         onChange={(event) => setDateDrafts((current) => ({
                                                             ...current,
                                                             [dateKey]: {
@@ -335,17 +368,20 @@ export default function FactureGlobaleTable({
                                 </th>
                             );
                         })}
+                        <th className="w-28 border-b border-slate-200 px-4 py-3 text-right text-[10px] font-extrabold uppercase tracking-wide">
+                        Actions
+                        </th>
                     </tr>
                 </thead>
 
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
 
                     {filteredRows.length === 0 &&
                         dataRows.length > 0 &&
                         filterableFiltersActive(textFilters, dateFilters, monthPrestationFilter) && (
                             <tr key="no-results">
                                 <td
-                                    colSpan={factureGlobaleColumns.length}
+                                    colSpan={factureGlobaleColumns.length + 1}
                                     className="border-b border-slate-200 px-4 py-6 text-center text-sm text-slate-500"
                                 >
                                     Aucune facture ne correspond aux filtres.
@@ -359,12 +395,13 @@ export default function FactureGlobaleTable({
                             ref={row.id === addRowId ? addRowRef : undefined}
                             tabIndex={row.id === addRowId ? -1 : undefined}
                             onClick={() => onRowSelect(row.id)}
-                            className={`h-15 ${isRoleY ? "" : "cursor-pointer"} bg-white text-slate-900 hover:bg-slate-50 ${row.id === addRowId ? "focus:relative focus:z-[1] focus:bg-blue-50 focus:[&>td]:border-y-2 focus:[&>td]:border-blue-600 focus:[&>td:first-child]:border-l-2 focus:[&>td:last-child]:border-r-2 focus:[&>td:first-child]:border-l-blue-600 focus:[&>td:last-child]:border-r-blue-600" : ""} ${(activeRowId ?? selectedRowId) === row.id ? "relative z-[1] bg-blue-50 [&>td]:border-y-2 [&>td]:border-blue-600 [&>td:first-child]:border-l-2 [&>td:last-child]:border-r-2 [&>td:first-child]:border-l-blue-600 [&>td:last-child]:border-r-blue-600" : ""}`}
+                            className={`h-15 ${isRoleY ? "" : "cursor-pointer"} bg-white text-slate-900 transition-colors hover:bg-slate-50/70 ${row.id === addRowId ? "focus:relative focus:z-[1] focus:bg-blue-50 focus:[&>td]:border-y-2 focus:[&>td]:border-blue-600 focus:[&>td:first-child]:border-l-2 focus:[&>td:last-child]:border-r-2 focus:[&>td:first-child]:border-l-blue-600 focus:[&>td:last-child]:border-r-blue-600" : ""} ${(activeRowId ?? selectedRowId) === row.id ? "relative z-[1] bg-blue-50 [&>td]:border-y-2 [&>td]:border-blue-600 [&>td:first-child]:border-l-2 [&>td:last-child]:border-r-2 [&>td:first-child]:border-l-blue-600 [&>td:last-child]:border-r-blue-600" : ""}`}
                         >
 
                             {isRoleY ? (
                                 factureGlobaleColumns.map((column) => {
-                                    const cellClass = `border border-slate-200 px-2 py-2 ${column.width}`;
+                                    const cellClass = `px-3 py-3 ${column.width}`;
+                                    if (column.key === "statut") return renderStatusCell(row, cellClass);
                                     if (column.key === "piecesJointes") {
                                         return (
                                             <InvoiceAttachmentsCell
@@ -383,11 +420,11 @@ export default function FactureGlobaleTable({
                                                 key={column.key}
                                                 options={majT5Options}
                                                 refSocial={row.refSocial}
-                                                className={`${cellClass} bg-yellow-100 text-red-800`}
+                                                className={`${cellClass} bg-amber-50 text-amber-800`}
                                                 isLocked={activeRowId !== null}
                                             />
                                         ) : (
-                                            <td key={column.key} className={`${cellClass} bg-yellow-100 text-red-800`} />
+                                            <td key={column.key} className={`${cellClass} bg-amber-50 text-amber-800`} />
                                         );
                                     }
 
@@ -413,7 +450,8 @@ export default function FactureGlobaleTable({
                                     const onSave = (nextValue: string) =>
                                         onCellChange(row.id, column.key, nextValue);
 
-                                    const cellClass = `border border-slate-200 px-2 py-2 ${column.width}`;
+                                    const cellClass = `px-3 py-3 ${column.width}`;
+                                    if (column.key === "statut") return renderStatusCell(row, cellClass);
 
                                     if (column.key === "piecesJointes") {
                                         return (
@@ -434,12 +472,12 @@ export default function FactureGlobaleTable({
                                                 key={column.key}
                                                 options={majT5Options}
                                                 refSocial={row.refSocial}
-                                                className={`${cellClass} bg-yellow-100 text-red-800`}
+                                                className={`${cellClass} bg-amber-50 text-amber-800`}
                                             />
                                         ) : (
                                             <td
                                                 key={column.key}
-                                                className={`${cellClass} bg-yellow-100 text-red-800`}
+                                                className={`${cellClass} bg-amber-50 text-amber-800`}
                                             />
                                         );
                                     }
@@ -560,8 +598,9 @@ export default function FactureGlobaleTable({
                                     const onSave = (nextValue: string) =>
                                         onCellChange(row.id, column.key, nextValue);
 
-                                    const cellClass = `border border-slate-200 px-2 py-2 ${column.width}`;
+                                    const cellClass = `px-3 py-3 ${column.width}`;
                                     const isAddRowLocked = activeRowId !== null && activeRowId !== row.id;
+                                    if (column.key === "statut") return renderStatusCell(row, cellClass);
 
                                     if (column.key === "piecesJointes") {
                                         return (
@@ -582,7 +621,7 @@ export default function FactureGlobaleTable({
                                         return (
                                             <td
                                                 key={column.key}
-                                                className={`${cellClass} bg-yellow-100 text-red-800 ${isAddRowLocked ? "cursor-not-allowed bg-slate-100 text-slate-400" : ""}`}
+                                                className={`${cellClass} bg-amber-50 text-amber-800 ${isAddRowLocked ? "cursor-not-allowed bg-slate-100 text-slate-400" : ""}`}
                                             />
                                         );
                                     }
@@ -683,6 +722,23 @@ export default function FactureGlobaleTable({
                                     );
                                 })
                             )}
+                            <td className="w-28 px-3 py-3 text-right">
+                                {row.id !== addRowId && (
+                                    <button
+                                        type="button"
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            onOpenActions(row.id);
+                                        }}
+                                        disabled={activeRowId !== null && activeRowId !== row.id}
+                                        title="Actions de la facture"
+                                    >
+                                        <MoreHorizontal size={15} />
+                                        Actions
+                                    </button>
+                                )}
+                            </td>
 
                         </tr>
                     ))}

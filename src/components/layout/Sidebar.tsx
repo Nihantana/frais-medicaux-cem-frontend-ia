@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  Bell,
   ChevronDown,
   ClipboardCheck,
   LogOut,
@@ -14,31 +13,47 @@ import {
   UserRound,
   Users,
   Receipt,
+  Sparkles,
   ClipboardPlus,
+  WalletCards,
   X,
+  LayoutDashboard,
   type LucideIcon,
 } from "lucide-react";
 import { Modal } from "../ui/Modal";
 import logo from "../../assets/logo.jpg";
+import { useAuth } from "../../features/auth";
+import NotificationBell from "../../features/notifications/components/NotificationBell";
 
 type NavLinkEntry = { to: string; label: string; icon: LucideIcon };
 type NavSectionEntry = { section: string };
 type NavEntry = NavLinkEntry | NavSectionEntry;
 
 const nav: NavEntry[] = [
+  { to: "/tableau-de-bord", label: "Tableau de bord", icon: LayoutDashboard },
   { section: "Gestion" },
   { to: "/agents", label: "Agents", icon: Users },
   { to: "/beneficiaires", label: "Bénéficiaires", icon: UserRound },
   { to: "/prestataires", label: "Prestataires", icon: Stethoscope },
   { to: "/pec", label: "Prises en charge", icon: ShieldCheck },
-  { to: "/factures", label:"Factures", icon:Receipt},
+  { to: "/factures", label: "Factures", icon: Receipt },
+  { to: "/assistant", label: "Assistant global", icon: Sparkles },
+  { to: "/factures/t6", label: "Facture T6", icon: ClipboardPlus },
+  { to: "/paie", label: "Retenue sur salaire", icon: WalletCards },
   { to: "/T5X", label: "Acte et prestation", icon: ClipboardPlus },
   { section: "Paramétrage" },
   { to: "/referentiels", label: "Référentiels", icon: Settings },
-  { to: "/demandes-suppression", label: "Demandes de suppression", icon: ClipboardCheck },
+  { to: "/utilisateurs", label: "Utilisateurs", icon: Users },
+  { to: "/roles", label: "Rôles et permissions", icon: ShieldCheck },
+  {
+    to: "/demandes-suppression",
+    label: "Demandes de suppression",
+    icon: ClipboardCheck,
+  },
 ];
 
 export default function Sidebar({ children }: { children: React.ReactNode }) {
+  const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -47,6 +62,14 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     nav
       .filter((entry): entry is NavLinkEntry => "to" in entry)
       .find((entry) => entry.to === location.pathname)?.label ?? "Accueil";
+  const displayName = user?.nom ?? user?.email ?? "Utilisateur";
+  const initials = displayName
+    .split(/\s+/)
+    .map((part) => part[0])
+    .filter((initial): initial is string => initial !== undefined)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${isActive ? "bg-red-50 text-red-700" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"}`;
@@ -112,13 +135,13 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             className={`flex items-center gap-3 rounded-xl bg-slate-50 p-3 ${collapsed ? "lg:justify-center" : ""}`}
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-extrabold text-white">
-              AR
+              {initials}
             </div>
             <div className={`${collapsed ? "lg:hidden" : ""}`}>
               <div className="text-xs font-bold text-slate-800">
-                Ando Rakoto
+                {displayName}
               </div>
-              <div className="text-[10px] text-slate-400">Administrateur</div>
+              <div className="text-[10px] text-slate-400">{user?.role}</div>
             </div>
           </div>
         </div>
@@ -153,16 +176,13 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                 placeholder="Rechercher un agent, PEC, facture…"
               />
             </div>
-            <button className="relative rounded-xl p-2.5 text-slate-500 hover:bg-slate-100">
-              <Bell size={19} />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-            </button>
+            <NotificationBell />
             <button
               onClick={() => setProfileOpen(true)}
               className="flex items-center gap-2 rounded-xl p-1.5 pr-2.5 hover:bg-slate-50"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100 text-xs font-extrabold text-red-700">
-                AR
+                {initials}
               </span>
               <ChevronDown
                 size={15}
@@ -184,16 +204,12 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       >
         <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-lg font-extrabold text-white">
-            AR
+            {initials}
           </div>
           <div>
-            <div className="font-bold text-slate-900">Ando Rakoto</div>
-            <div className="text-sm text-slate-500">
-              Administrateur • Direction SI
-            </div>
-            <div className="mt-1 text-xs text-slate-400">
-              Dernière connexion : aujourd'hui, 08:41
-            </div>
+            <div className="font-bold text-slate-900">{displayName}</div>
+            <div className="text-sm text-slate-500">{user?.role}</div>
+            <div className="mt-1 text-xs text-slate-400">{user?.email}</div>
           </div>
         </div>
         <div className="mt-6 grid gap-2">
@@ -203,7 +219,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           <button className="btn-secondary justify-start">
             <Settings size={17} /> Préférences d’interface
           </button>
-          <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50">
+          <button
+            onClick={() => void logout()}
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50"
+          >
             <LogOut size={17} /> Se déconnecter
           </button>
         </div>

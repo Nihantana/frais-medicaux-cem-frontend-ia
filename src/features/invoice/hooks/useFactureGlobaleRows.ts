@@ -27,7 +27,7 @@ const numericKeys = new Set<FactureGlobaleColumnKey>([
 
 function createEmptyInvoice(id: number): FactureGlobaleRow {
 	return {
-		id, piecesJointes: [], refSocial: "", dateReception: "", numFacture: "", dateFacture: "", nomEtablissement: "",
+		id, piecesJointes: [], statut: "", refSocial: "", dateReception: "", numFacture: "", dateFacture: "", nomEtablissement: "",
 		montantTotal: 0, partCem100: 0, depassement: 0, partCem80: 0, partAgent20: 0, totalPartAgent: 0,
 		localite: "", moisPrestation: null, refAgence: "", remarques1: "", retourPrestataire: "",
 		recuApresModification: "", dateEnregistrement: "", parQuiEnregistrement: "", dateEnvoiValidation: "",
@@ -153,7 +153,17 @@ export default function useFactureGlobaleRows(prestataires: Prestataire[]) {
 		const piece = await uploadFactureAttachment(rowId, file);
 		const attachment = mapFactureAttachment(piece);
 		updateRowAttachments(rowId, (attachments) => [...attachments, attachment]);
-	}, [assertEditableAttachmentRow, updateRowAttachments]);
+		setStoredDataRows((current) => (current ?? factureRowsQuery.data ?? [])
+			.map((row) => row.id === rowId && row.statut === "A_CORRIGER"
+				? {
+					...row,
+					statut: "ENREGISTREE",
+					recuApresModification: new Intl.DateTimeFormat("fr-FR", {
+						timeZone: "Indian/Antananarivo",
+					}).format(new Date()),
+				}
+				: row));
+	}, [assertEditableAttachmentRow, factureRowsQuery.data, updateRowAttachments]);
 
 	const removeAttachment = useCallback(async (rowId: number, attachmentId: string) => {
 		assertEditableAttachmentRow(rowId);

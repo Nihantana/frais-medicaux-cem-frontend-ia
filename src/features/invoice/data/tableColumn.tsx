@@ -4,6 +4,7 @@ import type { T5ParAnParActeColumn } from "../types/t5ParAnParActe";
 import type { T5ParSeanceColumn } from "../types/t5ParSeance";
 
 export const factureGlobaleColumns: FactureGlobaleColumn[] = [
+    { key: "statut", label: "Statut", width: "w-40 min-w-40 max-w-40" },
     { key: "refSocial", label: "Réf. Social", width: "w-28 min-w-28 max-w-28" },
     { key: "dateReception", label: "Date réception", width: "w-45 min-w-45" },
     { key: "numFacture", label: "Num facture", width: "w-36 min-w-36 " },

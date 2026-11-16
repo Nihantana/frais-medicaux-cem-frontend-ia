@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import EditableDateCell from "./editableDateCell";
-import { EditableNumberCell, EditableStringCell } from "../../../../components/ui";
+import { EditableNumberCell } from "../../../../components/ui";
 import { t5ParAnParActeColumns as columns } from "../../data/tableColumn";
 import type {
 	T5ParAnParActeTableProps,
 } from "../../types/t5ParAnParActe";
 import T5RefSocialFilterHeader from "./T5RefSocialFilterHeader";
+import T5LibelleCell from "./T5LibelleCell";
 
 const cellClass = "border border-slate-200 px-2 py-2 text-slate-900";
 const amountFormatter = new Intl.NumberFormat("fr-FR", {
 	maximumFractionDigits: 0,
 });
 
-export default function T5ParAnParActeTable({ rows, onCellChange, focusRefSocial, activeRowId = null, canEditRows = true }: T5ParAnParActeTableProps) {
+export default function T5ParAnParActeTable({ rows, onCellChange, focusRefSocial, activeRowId = null, canEditRows = true, targetType, targetLabel, actes = [] }: T5ParAnParActeTableProps) {
 	const focusedRowRef = useRef<HTMLTableRowElement>(null);
 	const [refSocialFilter, setRefSocialFilter] = useState("");
 	const targetRowId = rows.find((row) => row.refSocial === focusRefSocial)?.id;
@@ -63,23 +64,29 @@ export default function T5ParAnParActeTable({ rows, onCellChange, focusRefSocial
 									return <td key={column.key} className={`${className} truncate ${isLocked ? "cursor-not-allowed bg-slate-100 text-slate-400" : ""}`}>{row.refSocial || "—"}</td>;
 								}
 
+								if (column.key === "libelle") {
+									return (
+										<T5LibelleCell
+											key={column.key}
+											value={row.libelle}
+											className={className}
+											isLocked={isLocked}
+											canEditRows={canEditRows}
+											targetType={targetType}
+											targetLabel={targetLabel}
+											actes={actes}
+											onSave={(value) => onCellChange(row.id, "libelle", value)}
+											onActeSelect={(acte) => onCellChange(row.id, "libelle", { libelle: acte.label, acteId: acte.id })}
+										/>
+									);
+								}
+
 								if (!canEditRows) {
 									const value = row[column.key];
 									return (
 										<td key={column.key} className={`${className} truncate`}>
 											{typeof value === "number" ? amountFormatter.format(value) : value ?? "—"}
 										</td>
-									);
-								}
-								if (column.key === "libelle") {
-									return (
-										<EditableStringCell
-											key={column.key}
-											value={row[column.key]}
-											className={className}
-											isLocked={isLocked}
-											onSave={(value) => onCellChange(row.id, "libelle", value)}
-										/>
 									);
 								}
 								if (column.key === "dateActe") {

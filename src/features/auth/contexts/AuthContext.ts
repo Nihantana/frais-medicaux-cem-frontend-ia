@@ -5,7 +5,10 @@ export interface AuthContextValue {
   user: User | null;
   role: Role | null;
   loading: boolean;
-  setRole: (role: Role) => void;
+  error: string | null;
+  logout: () => Promise<void>;
 }
 
-export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+export const AuthContext = createContext<AuthContextValue | undefined>(
+  undefined,
+);

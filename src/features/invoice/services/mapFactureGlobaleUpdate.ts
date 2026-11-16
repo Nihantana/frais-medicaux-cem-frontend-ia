@@ -28,6 +28,12 @@ export function mapFactureGlobaleUpdate(
 	if (changes.dateReception !== undefined) {
 		body.dateReception = toApiDate(changes.dateReception, "date de réception");
 	}
+	if (changes.recuApresModification !== undefined) {
+		body.dateRetourAction = toApiDate(
+			changes.recuApresModification,
+			"date de réception après modification",
+		);
+	}
 	if (changes.moisPrestation !== undefined && changes.moisPrestation !== null) {
 		body.moisPrestation = changes.moisPrestation.toISOString().slice(0, 10);
 	}
