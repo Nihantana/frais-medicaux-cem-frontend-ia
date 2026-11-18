@@ -180,7 +180,7 @@ export default function useT5RowsByRefSocial<T extends T5Row>(
 				return true;
 			}
 		} catch (error) {
-			setSaveError(error instanceof Error ? error.message : "L’enregistrement T5 a échoué.");
+			setSaveError(error instanceof Error ? error.message : "L’enregistrement du suivi a échoué.");
 			return false;
 		} finally {
 			setIsSaving(false);

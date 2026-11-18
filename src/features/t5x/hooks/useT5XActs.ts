@@ -54,7 +54,7 @@ export default function useT5XActs(
 			setLoadError(
 				error instanceof Error
 					? error.message
-					: "Impossible de charger les actes et prestations T5.",
+					: "Impossible de charger les actes et prestations.",
 			);
 		} finally {
 			if (!isStale()) setIsLoading(false);

@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState, type FormEvent, type ChangeEvent } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
+  Camera,
   ChevronDown,
   ClipboardCheck,
   LogOut,
   Menu,
   PanelLeftClose,
-  Search,
   Settings,
   ShieldCheck,
   Stethoscope,
@@ -19,12 +19,21 @@ import {
   WalletCards,
   X,
   LayoutDashboard,
+  ChartNoAxesCombined,
+  Moon,
+  Sun,
   type LucideIcon,
 } from "lucide-react";
 import { Modal } from "../ui/Modal";
 import logo from "../../assets/logo.jpg";
 import { useAuth } from "../../features/auth";
 import NotificationBell from "../../features/notifications/components/NotificationBell";
+import {
+  fetchProfilePhoto,
+  updateProfile,
+  uploadProfilePhoto,
+} from "../../features/auth/services/auth";
+import { IMAGE_ACCEPT, validateImageFile } from "../../utils/image";
 
 type NavLinkEntry = { to: string; label: string; icon: LucideIcon };
 type NavSectionEntry = { section: string };
@@ -38,10 +47,11 @@ const nav: NavEntry[] = [
   { to: "/prestataires", label: "Prestataires", icon: Stethoscope },
   { to: "/pec", label: "Prises en charge", icon: ShieldCheck },
   { to: "/factures", label: "Factures", icon: Receipt },
+  { to: "/statistiques", label: "Statistiques", icon: ChartNoAxesCombined },
   { to: "/assistant", label: "Assistant global", icon: Sparkles },
-  { to: "/factures/t6", label: "Facture T6", icon: ClipboardPlus },
+  { to: "/factures/t6", label: "Détail des frais médicaux", icon: ClipboardPlus },
   { to: "/paie", label: "Retenue sur salaire", icon: WalletCards },
-  { to: "/T5X", label: "Acte et prestation", icon: ClipboardPlus },
+  { to: "/actes-prestations", label: "Actes et prestations", icon: ClipboardPlus },
   { section: "Paramétrage" },
   { to: "/referentiels", label: "Référentiels", icon: Settings },
   { to: "/utilisateurs", label: "Utilisateurs", icon: Users },
@@ -55,10 +65,23 @@ const nav: NavEntry[] = [
 ];
 
 export default function Sidebar({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser, theme, setTheme } = useAuth();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [accountView, setAccountView] = useState<
+    "overview" | "profile" | "preferences"
+  >("overview");
+  const [profileName, setProfileName] = useState("");
+  const [profilePhoto, setProfilePhoto] = useState<{
+    userId: number;
+    url: string;
+  } | null>(null);
+  const [photoReloadKey, setPhotoReloadKey] = useState(0);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const location = useLocation();
   const current =
     nav
@@ -72,6 +95,94 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     .slice(0, 2)
     .join("")
     .toUpperCase();
+  const profilePhotoUrl =
+    profilePhoto?.userId === user?.id ? profilePhoto.url : null;
+  const profileUserId = user?.id;
+  const title =
+    accountView === "profile"
+      ? "Modifier mon profil"
+      : accountView === "preferences"
+        ? "Préférences d’interface"
+        : "Mon profil";
+
+  useEffect(() => {
+    if (!user?.hasPhoto || profileUserId === undefined) return;
+
+    let active = true;
+    let objectUrl: string | null = null;
+    void fetchProfilePhoto()
+      .then((photo) => {
+        objectUrl = URL.createObjectURL(photo);
+        if (active) setProfilePhoto({ userId: profileUserId, url: objectUrl });
+        else URL.revokeObjectURL(objectUrl);
+      })
+      .catch((cause: unknown) => {
+        if (active) {
+          setProfileError(
+            cause instanceof Error
+              ? cause.message
+              : "Impossible de charger la photo de profil.",
+          );
+        }
+      });
+
+    return () => {
+      active = false;
+      if (objectUrl !== null) URL.revokeObjectURL(objectUrl);
+    };
+  }, [user?.hasPhoto, profileUserId, photoReloadKey]);
+
+  async function saveProfile(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    const nom = profileName.trim();
+    if (!nom) {
+      setProfileError("Le nom affiché est obligatoire.");
+      return;
+    }
+    setSavingProfile(true);
+    setProfileError(null);
+    setProfileMessage(null);
+    try {
+      await updateProfile(nom);
+      await refreshUser();
+      setProfileMessage("Le profil a été mis à jour.");
+    } catch (cause: unknown) {
+      setProfileError(
+        cause instanceof Error ? cause.message : "La mise à jour a échoué.",
+      );
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  async function changePhoto(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const input = event.currentTarget;
+    const image = input.files?.[0];
+    if (!image) return;
+    const validationError = validateImageFile(image);
+    if (validationError) {
+      setProfileError(validationError);
+      input.value = "";
+      return;
+    }
+
+    setUploadingPhoto(true);
+    setProfileError(null);
+    setProfileMessage(null);
+    try {
+      await uploadProfilePhoto(image);
+      await refreshUser();
+      setPhotoReloadKey((key) => key + 1);
+      setProfileMessage("La photo de profil a été mise à jour.");
+    } catch (cause: unknown) {
+      setProfileError(
+        cause instanceof Error ? cause.message : "L’envoi de la photo a échoué.",
+      );
+    } finally {
+      setUploadingPhoto(false);
+      input.value = "";
+    }
+  }
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${isActive ? "bg-red-50 text-red-700" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"}`;
@@ -121,6 +232,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                   to={item.to}
                   title={collapsed ? item.label : undefined}
                   onClick={() => setOpen(false)}
+                  end={item.to === "/factures"}
                   className={linkClass}
                 >
                   <item.icon size={18} className="shrink-0" />
@@ -132,21 +244,16 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             )}
           </nav>
         </div>
-        <div className="border-t border-slate-100 p-3">
-          <div
-            className={`flex items-center gap-3 rounded-xl bg-slate-50 p-3 ${collapsed ? "lg:justify-center" : ""}`}
-          >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-extrabold text-white">
-              {initials}
-            </div>
-            <div className={`${collapsed ? "lg:hidden" : ""}`}>
+        {!collapsed && (
+          <div className="border-t border-slate-100 p-3">
+            <div className="rounded-xl bg-slate-50 p-3">
               <div className="text-xs font-bold text-slate-800">
                 {displayName}
               </div>
               <div className="text-[10px] text-slate-400">{user?.role}</div>
             </div>
           </div>
-        </div>
+        )}
       </aside>
 
       <div
@@ -171,21 +278,22 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             <span className="font-bold text-slate-700">{current}</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <div className="hidden h-10 w-72 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 md:flex">
-              <Search size={16} className="text-slate-400" />
-              <input
-                className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
-                placeholder="Rechercher un agent, PEC, facture…"
-              />
-            </div>
             <NotificationBell />
             <button
-              onClick={() => setProfileOpen(true)}
+              onClick={() => {
+                setAccountView("overview");
+                setProfileError(null);
+                setProfileMessage(null);
+                setProfileOpen(true);
+              }}
               className="flex items-center gap-2 rounded-xl p-1.5 pr-2.5 hover:bg-slate-50"
+              aria-label="Ouvrir mon compte"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100 text-xs font-extrabold text-red-700">
-                {initials}
-              </span>
+              <ProfileAvatar
+                photoUrl={profilePhotoUrl}
+                initials={initials}
+                className="h-9 w-9 bg-red-100 text-xs text-red-700"
+              />
               <ChevronDown
                 size={15}
                 className="hidden text-slate-400 sm:block"
@@ -199,36 +307,175 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       </div>
       <Modal
         open={profileOpen}
-        title="Mon profil"
-        description="Compte actuellement connecté"
-        onClose={() => setProfileOpen(false)}
+        title={title}
+        description={
+          accountView === "preferences"
+            ? "Choisissez votre thème d’affichage."
+            : accountView === "profile"
+              ? "Modifiez votre nom affiché et votre photo."
+              : "Compte actuellement connecté"
+        }
+        onClose={() => {
+          setProfileOpen(false);
+          setAccountView("overview");
+        }}
         width="max-w-md"
       >
-        <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-lg font-extrabold text-white">
-            {initials}
+        {accountView === "overview" && (
+          <>
+            <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4">
+              <ProfileAvatar
+                photoUrl={profilePhotoUrl}
+                initials={initials}
+                className="h-14 w-14 bg-slate-900 text-lg text-white"
+              />
+              <div className="min-w-0">
+                <div className="truncate font-bold text-slate-900">
+                  {displayName}
+                </div>
+                <div className="text-sm text-slate-500">{user?.role}</div>
+                <div className="mt-1 truncate text-xs text-slate-400">
+                  {user?.email}
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 grid gap-2">
+              <button
+                className="btn-secondary justify-start"
+                onClick={() => {
+                  setProfileName(user?.nom ?? "");
+                  setProfileError(null);
+                  setProfileMessage(null);
+                  setAccountView("profile");
+                }}
+              >
+                <UserRound size={17} /> Modifier mon profil
+              </button>
+              <button
+                className="btn-secondary justify-start"
+                onClick={() => setAccountView("preferences")}
+              >
+                <Settings size={17} /> Préférences d’interface
+              </button>
+              <button
+                onClick={() => void logout()}
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50"
+              >
+                <LogOut size={17} /> Se déconnecter
+              </button>
+            </div>
+          </>
+        )}
+        {accountView === "profile" && (
+          <form className="grid gap-4" onSubmit={(event) => void saveProfile(event)}>
+            <button
+              type="button"
+              className="btn-ghost justify-self-start"
+              onClick={() => setAccountView("overview")}
+            >
+              Retour au compte
+            </button>
+            <label className="label">
+              Nom affiché
+              <input
+                className="field mt-1"
+                value={profileName}
+                onChange={(event) => setProfileName(event.target.value)}
+                maxLength={120}
+                required
+              />
+            </label>
+            <div className="grid gap-2">
+              <span className="label mb-0">Photo de profil</span>
+              <div className="flex items-center gap-3">
+                <ProfileAvatar
+                  photoUrl={profilePhotoUrl}
+                  initials={initials}
+                  className="h-14 w-14 bg-slate-900 text-lg text-white"
+                />
+                <label className="btn-secondary">
+                  <Camera size={17} />
+                  {uploadingPhoto ? "Envoi…" : "Choisir une photo"}
+                  <input
+                    className="sr-only"
+                    type="file"
+                    accept={IMAGE_ACCEPT}
+                    onChange={(event) => void changePhoto(event)}
+                    disabled={uploadingPhoto}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-slate-400">
+                JPEG, PNG ou WEBP — 2 Mo maximum.
+              </p>
+            </div>
+            {profileError && (
+              <p className="text-sm text-red-600" role="alert">
+                {profileError}
+              </p>
+            )}
+            {profileMessage && (
+              <p className="text-sm text-emerald-700" role="status">
+                {profileMessage}
+              </p>
+            )}
+            <button className="btn-primary" type="submit" disabled={savingProfile}>
+              {savingProfile ? "Enregistrement…" : "Enregistrer le nom"}
+            </button>
+          </form>
+        )}
+        {accountView === "preferences" && (
+          <div className="grid gap-4">
+            <button
+              type="button"
+              className="btn-ghost justify-self-start"
+              onClick={() => setAccountView("overview")}
+            >
+              Retour au compte
+            </button>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                aria-pressed={theme === "light"}
+                className={`btn-secondary justify-start ${theme === "light" ? "border-red-300 bg-red-50 text-red-700" : ""}`}
+                onClick={() => setTheme("light")}
+              >
+                <Sun size={17} /> Clair
+              </button>
+              <button
+                type="button"
+                aria-pressed={theme === "dark"}
+                className={`btn-secondary justify-start ${theme === "dark" ? "border-red-300 bg-red-50 text-red-700" : ""}`}
+                onClick={() => setTheme("dark")}
+              >
+                <Moon size={17} /> Sombre
+              </button>
+            </div>
           </div>
-          <div>
-            <div className="font-bold text-slate-900">{displayName}</div>
-            <div className="text-sm text-slate-500">{user?.role}</div>
-            <div className="mt-1 text-xs text-slate-400">{user?.email}</div>
-          </div>
-        </div>
-        <div className="mt-6 grid gap-2">
-          <button className="btn-secondary justify-start">
-            <UserRound size={17} /> Modifier mon profil
-          </button>
-          <button className="btn-secondary justify-start">
-            <Settings size={17} /> Préférences d’interface
-          </button>
-          <button
-            onClick={() => void logout()}
-            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50"
-          >
-            <LogOut size={17} /> Se déconnecter
-          </button>
-        </div>
+        )}
       </Modal>
     </div>
+  );
+}
+
+function ProfileAvatar({
+  photoUrl,
+  initials,
+  className,
+}: {
+  photoUrl: string | null;
+  initials: string;
+  className: string;
+}) {
+  return (
+    <span
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full font-extrabold ${className}`}
+    >
+      {photoUrl ? (
+        <img src={photoUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        initials
+      )}
+    </span>
   );
 }

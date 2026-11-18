@@ -105,7 +105,7 @@ export default function T5ParAn() {
     (row, rows) => calculateCreatedParAnRow(row, rows, cible?.plafondParAn),
   );
   if (isCibleLoading)
-    return <LoadingState message="Chargement de la configuration T5…" />;
+    return <LoadingState message="Chargement des règles de plafond…" />;
   if (cibleError)
     return (
       <ErrorBlock message={cibleError} onRetry={() => void reloadCible()} />
@@ -113,7 +113,7 @@ export default function T5ParAn() {
   if (!cible || cible.typeContrainte !== TypeContrainte.PAR_AN) {
     return (
       <ErrorBlock
-        message="La cible chargée ne correspond pas à un T5 par an."
+        message="Les règles de plafond ne correspondent pas à cette page."
         onRetry={() => void reloadCible()}
       />
     );
@@ -124,7 +124,7 @@ export default function T5ParAn() {
     return (
       <ErrorBlock message={actesError} onRetry={() => void reloadActes()} />
     );
-  const pageTitle = cible.label || label || "T5 par an";
+  const pageTitle = cible.label || label || "Suivi du plafond annuel";
 
   return (
     <div className="flex h-[calc(100dvh-10rem)] min-h-[24rem] flex-col gap-2">
@@ -148,11 +148,11 @@ export default function T5ParAn() {
       />
       <section className="panel flex min-h-0 flex-1 flex-col overflow-hidden">
         {isLookupLoading ? (
-          <LoadingState message="Recherche de l’agent et chargement des données T5…" />
+          <LoadingState message="Recherche du bénéficiaire et chargement de son suivi…" />
         ) : !lookupResult ? (
           <T5SearchPrompt refSocial={refSocial} />
         ) : !isReady ? (
-          <LoadingState message="Chargement des données T5…" />
+          <LoadingState message="Chargement du suivi des dépenses…" />
         ) : (
           <>
             {saveError && <ErrorBlock message={saveError} />}

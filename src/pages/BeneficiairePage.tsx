@@ -236,24 +236,24 @@ export default function BeneficiairePage() {
 	async function handleCopyIdp(idp: string): Promise<void> {
 		try {
 			await navigator.clipboard.writeText(idp);
-			notify("IDP copié.");
+			notify("Identifiant copié.");
 		} catch {
-			notify("Impossible de copier l'IDP.", "error");
+			notify("Impossible de copier l'identifiant.", "error");
 		}
 	}
 
 	const columns: Column<BeneficiaryRow>[] = [
 		{
 			key: "idp",
-			label: "IDP",
+			label: "Identifiant bénéficiaire",
 			render: (row) => (
 				<span className="inline-flex items-center gap-1.5">
 					<span className="font-mono text-xs font-bold">{row.idp}</span>
 					<button
 						type="button"
 						className="btn-ghost p-1"
-						title="Copier l'IDP"
-						aria-label={`Copier l'IDP ${row.idp}`}
+						title="Copier l'identifiant"
+						aria-label={`Copier l'identifiant de ${row.nom} ${row.prenom}`}
 						onClick={() => void handleCopyIdp(row.idp)}
 					>
 						<Copy size={14} />
@@ -268,7 +268,7 @@ export default function BeneficiairePage() {
 		},
 		{
 			key: "codeFamille",
-			label: "Code_Fam",
+			label: "Lien familial",
 			render: (row) => (
 				<Badge tone={FAMILLE_TONES[row.codeFamille] ?? "slate"}>
 					{labelCodeFamille(row.codeFamille)}
@@ -283,7 +283,7 @@ export default function BeneficiairePage() {
 		{ key: "sexe", label: "Sexe", render: (row) => labelSexe(row.sexe) },
 		{
 			key: "observationIDP",
-			label: "Obs IDP",
+			label: "Observation bénéficiaire",
 			className: "max-w-[280px] whitespace-normal",
 			render: (row) => (
 				<span className="text-xs text-slate-600">
@@ -298,7 +298,7 @@ export default function BeneficiairePage() {
 		},
 		{
 			key: "matricule",
-			label: "IM",
+			label: "Matricule agent",
 			render: (row) => (
 				<span className="font-mono text-xs">{row.matricule}</span>
 			),
@@ -325,7 +325,7 @@ export default function BeneficiairePage() {
 			<ToastViewport />
 			<PageHeader
 				title="Gestion des Bénéficiaires"
-				description="Bénéficiaires (IDP) rattachés aux agents : consultation, mise à jour de l'état civil et de l'observation."
+				description="Consultez et mettez à jour les informations des bénéficiaires rattachés aux agents."
 				actions={
 					<>
 						<button className="btn-secondary" onClick={() => void refresh()}>
@@ -370,7 +370,7 @@ export default function BeneficiairePage() {
 							}}
 						>
 							<option value="matricule">Par matricule agent</option>
-							<option value="idp">Par IDP</option>
+							<option value="idp">Par identifiant bénéficiaire</option>
 						</select>
 						<input
 							className="field"
@@ -400,7 +400,7 @@ export default function BeneficiairePage() {
 				</form>
 				<p className="text-xs text-slate-400">
 					{appliedSearch
-						? `Recherche ${searchMode === "idp" ? "par IDP" : "par matricule"} : ${appliedSearch}`
+						? `Recherche ${searchMode === "idp" ? "par identifiant bénéficiaire" : "par matricule"} : ${appliedSearch}`
 						: `${rows.length} bénéficiaire(s) chargé(s) à partir de ${agents.length} agent(s).`}
 				</p>
 			</div>
@@ -473,7 +473,6 @@ export default function BeneficiairePage() {
 					<BeneficiaryEditForm
 						key={editTarget.idp}
 						beneficiary={editTarget}
-						isAgent={editTarget.codeFamille === "AGENT"}
 						submitting={submitting}
 						onSubmit={handleEdit}
 						onCancel={() => setEditTarget(null)}
@@ -483,7 +482,7 @@ export default function BeneficiairePage() {
 
 			<Modal
 				open={Boolean(observationTarget)}
-				title="Observation IDP"
+				title="Observation du bénéficiaire"
 				description={
 					observationTarget
 						? `${observationTarget.nom} ${observationTarget.prenom} — ${observationTarget.idp}`

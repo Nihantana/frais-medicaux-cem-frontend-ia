@@ -46,7 +46,7 @@ export default function LookupLayout({ children, onSearchIdp }: Props) {
             className="h-10 w-auto max-w-[185px] object-contain object-left"
           />
           <span className="rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-red-700">
-            Suivi T5
+            Suivi des plafonds
           </span>
           <button
             type="button"
@@ -60,8 +60,8 @@ export default function LookupLayout({ children, onSearchIdp }: Props) {
 
         <div className="flex-1 space-y-5 overflow-y-auto p-4">
           <LookupSection
-            title="Informations IDP"
-            searchLabel="IDP"
+            title="Rechercher un bénéficiaire"
+            searchLabel="Identifiant du bénéficiaire"
             searchValue={idp}
             setSearchValue={setIdp}
             onSubmit={submitIdp}
@@ -75,14 +75,14 @@ export default function LookupLayout({ children, onSearchIdp }: Props) {
               value={lookup.result?.agent.codeFam}
             />
             <InfoField
-              label="Observation IDP"
+              label="Observation"
               value={lookup.result?.agent.observationIdp}
             />
           </LookupSection>
 
           <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
             <h2 className="mb-3 text-xs font-extrabold uppercase tracking-wide text-slate-700">
-              Informations matricule
+              Informations de l’agent
             </h2>
             <div className="space-y-2">
               <InfoField
@@ -122,7 +122,7 @@ export default function LookupLayout({ children, onSearchIdp }: Props) {
             <span>Frais médicaux</span>
             <span>/</span>
             <span className="font-bold text-slate-700">
-              Suivi des plafonds T5
+              Suivi des plafonds de frais médicaux
             </span>
           </div>
           <div className="ml-auto">

@@ -358,7 +358,7 @@ export function AgentForm({
 					required
 				/>
 				<SelectField
-					label="Statut PEC"
+					label="Statut de prise en charge"
 					value={state.statutPEC}
 					onChange={(value) => update("statutPEC", value as StatutPEC)}
 					options={toOptions(STATUTS_PEC, labelStatutPEC)}

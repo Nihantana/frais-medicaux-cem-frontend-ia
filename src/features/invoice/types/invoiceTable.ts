@@ -94,6 +94,7 @@ export type FactureGlobaleTableProps = {
 	addRowId: number;
 	activeRowId: number | null;
 	selectedRowId: number | null;
+	isAddRowVisible: boolean;
 	containerRef: RefObject<HTMLDivElement | null>;
 	addRowRef: RefObject<HTMLTableRowElement | null>;
 	onRowSelect: (rowId: number) => void;

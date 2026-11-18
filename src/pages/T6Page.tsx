@@ -238,7 +238,7 @@ export default function T6Page() {
       setError(
         caught instanceof Error
           ? caught.message
-          : "Impossible de charger les données T6.",
+          : "Impossible de charger les détails des frais médicaux.",
       );
     } finally {
       setIsLoading(false);
@@ -560,7 +560,7 @@ export default function T6Page() {
       !draft.dateActe ||
       (!draft.acteId && !acteFromLibelle)
     )
-      return "Libellé, date, IDP et acte sont obligatoires. Le libellé doit correspondre à un acte existant.";
+      return "Le bénéficiaire, la date et l’acte sont obligatoires. Le libellé doit correspondre à un acte existant.";
     if (
       !Number.isFinite(Number(draft.montantActe)) ||
       Number(draft.montantActe) < 0
@@ -691,7 +691,7 @@ export default function T6Page() {
     },
     {
       key: "idp",
-      label: "IDP",
+      label: "Identifiant bénéficiaire",
       className: "min-w-[110px]",
       render: (line) => line.idp,
     },
@@ -703,19 +703,19 @@ export default function T6Page() {
     },
     {
       key: "codeFam",
-      label: "Code fam",
+      label: "Lien familial",
       className: "min-w-[95px]",
       render: (line) => line.codeFam ?? "—",
     },
     {
       key: "obsIdp",
-      label: "Obs IDP",
+      label: "Observation bénéficiaire",
       className: "min-w-[130px]",
       render: (line) => line.obsIdp ?? "—",
     },
     {
       key: "im",
-      label: "IM",
+      label: "Matricule agent",
       className: "min-w-[90px]",
       render: (line) => line.im ?? "—",
     },
@@ -727,13 +727,13 @@ export default function T6Page() {
     },
     {
       key: "direction",
-      label: "Code direction",
+      label: "Direction",
       className: "min-w-[120px]",
       render: (line) => line.codeDirection ?? "—",
     },
     {
       key: "service",
-      label: "Code service / agence",
+      label: "Service / agence",
       className: "min-w-[160px]",
       render: () => "—",
     },
@@ -764,7 +764,7 @@ export default function T6Page() {
     },
     {
       key: "numPec",
-      label: "Num PEC",
+      label: "N° prise en charge",
       className: "min-w-[100px]",
       render: (line) => line.numPec ?? "—",
     },
@@ -891,8 +891,8 @@ export default function T6Page() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="T6 — Facture individuelle"
-        description="Toutes les lignes des factures non clôturées, filtrables par référence sociale."
+        title="Détail des frais médicaux"
+        description="Consultez et mettez à jour les frais rattachés aux factures non clôturées."
       />
       {error && (
         <ErrorBlock
@@ -1024,7 +1024,7 @@ export default function T6Page() {
                   >
                     <div>
                       <h2 className="font-bold text-slate-900">
-                        Rapprochement T6 / facture
+                        Comparaison des frais saisis et de la facture
                       </h2>
                       <p className="mt-0.5 text-xs text-slate-600">
                         {rapprochementFactureAffichee.refSociale} ·{" "}
@@ -1060,7 +1060,7 @@ export default function T6Page() {
                   )}
                   {statutRapprochementAffiche === "INCOMPLET" && (
                     <p className="px-5 py-4 text-sm text-amber-800">
-                      Le rapprochement est incomplet : vérifiez les lignes T6 et
+                      La comparaison est incomplète : vérifiez les lignes de frais et
                       la présence des montants de facture, dont la part agent.
                     </p>
                   )}
@@ -1089,7 +1089,7 @@ export default function T6Page() {
                             </h3>
                             <div className="mt-3 grid grid-cols-2 gap-3">
                               <div>
-                                <p className="text-xs text-slate-500">T6</p>
+                                <p className="text-xs text-slate-500">Frais saisis</p>
                                 <p className="mt-1 font-semibold text-slate-900">
                                   {formatMoney(item.t6)}
                                 </p>
@@ -1136,7 +1136,7 @@ export default function T6Page() {
           <section className="mt-4 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-base font-extrabold text-slate-900">
-                Lignes T6
+                Détail des frais
               </h2>
               <div className="flex gap-2">
                 <button
@@ -1260,8 +1260,8 @@ export default function T6Page() {
             open={lineFormOpen}
             title={
               editingLineId === null
-                ? "Ajouter une ligne T6"
-                : "Modifier la ligne T6"
+                ? "Ajouter une ligne de frais"
+                : "Modifier le détail des frais"
             }
             description={
               formFacture
@@ -1274,7 +1274,7 @@ export default function T6Page() {
             <form className="space-y-4" onSubmit={saveLine}>
               <div className="grid gap-3 md:grid-cols-2">
                 <label className="label">
-                  N° IDP
+                  Identifiant du bénéficiaire
                   <input
                     className="field mt-1"
                     value={draft.idp}
@@ -1318,7 +1318,7 @@ export default function T6Page() {
                   </select>
                 </label>
                 <label className="label">
-                  N° PEC
+                  N° de prise en charge
                   <input
                     type="number"
                     min="1"

@@ -14,7 +14,7 @@ import T5XFilterHeader from "./ui/T5XFilterHeader";
 import T5XInheritedConstraintCell from "./ui/T5XInheritedConstraintCell";
 import useT5XAddRowValues from "../hooks/useT5XAddRowValues";
 
-const cellClass = "border border-slate-200 px-2 py-2 text-slate-900";
+const cellClass = "border-b border-slate-100 px-3 py-3 text-[13px] leading-5 text-slate-800";
 const numberFormatter = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 type FilterKey = "code" | "nom" | "nomCategorie" | "typeContrainte";
 
@@ -67,8 +67,8 @@ export default function T5XActsTable({ rows, categories, addRowId, activeRowId =
 
 	return (
 		<div ref={containerRef} className="min-h-0 flex-1 overflow-auto">
-			<table className="h-fit w-max min-w-full table-fixed border-collapse text-sm">
-				<thead className="sticky top-0 z-10 bg-slate-900 text-white">
+			<table className="h-fit w-max min-w-full table-fixed border-separate border-spacing-0 text-sm">
+				<thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
 					<tr>
 						{t5xConstraintColumns.map((column) => {
 							const filterKey = column.filterMode ? column.key as FilterKey : null;
@@ -95,7 +95,7 @@ export default function T5XActsTable({ rows, categories, addRowId, activeRowId =
 					{visibleRows.length === 0 && dataRows.length > 0 && (
 						<tr key="no-results"><td colSpan={t5xConstraintColumns.length} className="border-b border-slate-200 px-4 py-6 text-center text-sm text-slate-500">Aucun acte ou prestation ne correspond aux filtres.</td></tr>
 					)}
-					{[...visibleRows, ...(addRow ? [addRow] : [])].map((row) => {
+					{[...visibleRows, ...(addRow ? [addRow] : [])].map((row, index) => {
 						const category = findCategory(row.categorieId);
 						const locked = isConstraintLocked(row, category);
 						const effective = getEffectiveConstraint(row, category);
@@ -105,7 +105,17 @@ export default function T5XActsTable({ rows, categories, addRowId, activeRowId =
 							ref={row.id === addRowId ? addRowRef : undefined}
 							tabIndex={row.id === addRowId ? -1 : undefined}
 							onClick={() => onRowSelect?.(row.id)}
-							className={`h-12 cursor-pointer bg-white text-slate-900 hover:bg-slate-50 ${row.id === addRowId && activeRowId === null ? "focus:relative focus:z-[1] focus:bg-blue-50 focus:[&>td]:border-y-2 focus:[&>td]:border-blue-600 focus:[&>td:first-child]:border-l-2 focus:[&>td:last-child]:border-r-2 focus:[&>td:first-child]:border-l-blue-600 focus:[&>td:last-child]:border-r-blue-600" : ""} ${(activeRowId ?? selectedRowId) === row.id ? "relative z-[1] bg-blue-50 [&>td]:border-y-2 [&>td]:border-blue-600 [&>td:first-child]:border-l-2 [&>td:last-child]:border-r-2 [&>td:first-child]:border-l-blue-600 [&>td:last-child]:border-r-blue-600" : ""}`}
+							className={`h-14 cursor-pointer transition-colors duration-150 ${
+								index % 2 === 1 ? "bg-slate-50/35" : "bg-white"
+							} hover:bg-slate-50 ${
+								row.id === addRowId
+									? "bg-red-50/30 shadow-[inset_3px_0_0_#ef4444]"
+									: ""
+							} ${
+								(activeRowId ?? selectedRowId) === row.id
+									? "relative z-[1] bg-red-50/55 shadow-[inset_3px_0_0_#dc2626]"
+									: ""
+							}`}
 						>
 							{t5xConstraintColumns.map((column) => {
 								const className = `${cellClass} ${column.width}`;

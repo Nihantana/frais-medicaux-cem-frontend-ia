@@ -38,7 +38,7 @@ export default function useT5XCategories() {
 			setLoadError(
 				error instanceof Error
 					? error.message
-					: "Impossible de charger les catégories T5.",
+					: "Impossible de charger les catégories d’actes.",
 			);
 		} finally {
 			if (!isStale()) setIsLoading(false);

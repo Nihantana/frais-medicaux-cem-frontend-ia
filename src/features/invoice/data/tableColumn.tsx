@@ -10,7 +10,7 @@ export const factureGlobaleColumns: FactureGlobaleColumn[] = [
     { key: "numFacture", label: "Num facture", width: "w-36 min-w-36 " },
     { key: "dateFacture", label: "Date facture", width: "w-45 min-w-45" },
     { key: "nomEtablissement", label: "Nom de l'établissement", width: "w-80 min-w-80 max-w-80" },
-    { key: "majT5", label: "Maj T5", width: "w-32 min-w-32 max-w-32" },
+    { key: "majT5", label: "Suivi du plafond", width: "w-40 min-w-40 max-w-40" },
     { key: "montantTotal", label: "Montant total", width: "w-36 min-w-36 max-w-36" },
     { key: "partCem100", label: "100 % CEM", width: "w-32 min-w-32 max-w-32" },
     { key: "depassement", label: "Dépassement", width: "w-32 min-w-32 max-w-32" },

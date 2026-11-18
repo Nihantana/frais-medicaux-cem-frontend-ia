@@ -1,6 +1,16 @@
 import { X } from "lucide-react";
 import { T5X_CONSTRAINT_TYPES, type T5XCategoryOption, type T5XConstraintType } from "../../types/t5xType";
 
+const CONSTRAINT_LABELS: Record<string, string> = {
+	SANS_CONTRAINTE: "Sans suivi",
+	PAR_AN: "Suivi annuel",
+	PAR_ACTE: "Suivi par acte",
+	PAR_SEANCE: "Suivi par séance",
+	PAR_AN_PAR_ACTE: "Suivi annuel et par acte",
+	EXCLU: "Exclu",
+	SUR_DECISION_DG: "Sur décision",
+};
+
 type Props = {
 	label: string;
 	width: string;
@@ -30,7 +40,7 @@ export default function T5XFilterHeader({
 }: Props) {
 	return (
 		<th
-			className={`relative border border-slate-700 px-3 py-3 text-left text-xs font-bold ${width} ${filterMode ? "cursor-pointer" : ""} ${isOpen ? "z-30" : ""}`}
+			className={`relative border-b border-slate-200 px-3 py-3.5 text-left text-[10px] font-bold uppercase leading-4 tracking-[0.055em] text-slate-600 ${width} ${filterMode ? "cursor-pointer transition-colors hover:bg-slate-100" : ""} ${isOpen ? "z-30 bg-slate-100" : "bg-slate-50/95"}`}
 			onMouseEnter={onMouseEnter}
 			onMouseLeave={onMouseLeave}
 			aria-expanded={filterMode ? isOpen : undefined}
@@ -41,17 +51,17 @@ export default function T5XFilterHeader({
 					{filterMode === "constraint" ? (
 						<select
 							aria-label={`Filtrer par ${label.toLocaleLowerCase()}`}
-							className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+							className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-normal outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
 							value={filterValue}
 							onChange={(event) => onFilterChange?.(event.target.value)}
 						>
 							<option value="">Tous les types</option>
-							{constraintTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+							{constraintTypes.map((type) => <option key={type} value={type}>{CONSTRAINT_LABELS[type] ?? type}</option>)}
 						</select>
 					) : filterMode === "category" ? (
 						<select
 							aria-label={`Filtrer par ${label.toLocaleLowerCase()}`}
-							className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+							className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-normal outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
 							value={filterValue}
 							onChange={(event) => onFilterChange?.(event.target.value)}
 						>
@@ -64,7 +74,7 @@ export default function T5XFilterHeader({
 							type="search"
 							aria-label={`Filtrer par ${label.toLocaleLowerCase()}`}
 							placeholder={`Rechercher ${label.toLocaleLowerCase()}…`}
-							className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+							className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs font-normal outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
 							value={filterValue}
 							onChange={(event) => onFilterChange?.(event.target.value)}
 						/>

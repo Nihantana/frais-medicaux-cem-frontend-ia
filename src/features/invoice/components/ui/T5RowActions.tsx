@@ -26,7 +26,7 @@ export default function T5RowActions({
 				confirmLabel="Enregistrer"
 				confirmDisabled={isSaving}
 				variant="primary"
-				message="Voulez-vous vraiment enregistrer les modifications de cette ligne T5 ?"
+				message="Voulez-vous vraiment enregistrer les modifications de cette ligne ?"
 				onCancel={() => setIsConfirmationOpen(false)}
 				onConfirm={async () => {
 					const saved = await onSave();
@@ -35,14 +35,14 @@ export default function T5RowActions({
 			/>
 			<div className="fixed bottom-12 right-8 z-20 flex items-center gap-3">
 				<CancelRowButton
-					ariaLabel="Réinitialiser la ligne T5 active"
-					title="Réinitialiser la ligne T5 active"
+					ariaLabel="Réinitialiser la ligne active"
+					title="Réinitialiser la ligne active"
 					disabled={!hasActiveRow || isSaving}
 					onClick={onReset}
 				/>
 				<SaveRowButton
-					ariaLabel="Enregistrer la ligne T5 active"
-					title="Enregistrer la ligne T5 active"
+					ariaLabel="Enregistrer la ligne active"
+					title="Enregistrer la ligne active"
 					disabled={!canSave || isSaving}
 					onClick={() => setIsConfirmationOpen(true)}
 				/>

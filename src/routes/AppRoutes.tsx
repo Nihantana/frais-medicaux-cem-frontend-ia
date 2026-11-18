@@ -20,6 +20,7 @@ import RoleManagementPage from "../pages/RoleManagementPage";
 import AuditSessionsPage from "../pages/AuditSessionsPage";
 import PaiePage from "../pages/PaiePage";
 import DashboardPage from "../pages/DashboardPage";
+import StatisticsPage from "../pages/StatisticsPage";
 import { fetchIdpLookupMock } from "../features/invoice/mocks/idpLookup";
 import { ROUTES } from "../constants/routes";
 
@@ -124,6 +125,7 @@ export default function AppRoutes() {
         }
       />
       <Route path={ROUTES.paie} element={<AppShell><PaiePage /></AppShell>} />
+      <Route path={ROUTES.statistics} element={<AppShell><StatisticsPage /></AppShell>} />
       <Route path={ROUTES.assistant} element={<AppShell><AssistantGlobalPage /></AppShell>} />
       <Route
         path={ROUTES.T5X}

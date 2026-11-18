@@ -144,7 +144,7 @@ export function FamilyMemberCreateForm({
 			</div>
 
 			<p className="text-xs text-slate-500">
-				L'IDP du bénéficiaire est généré automatiquement par le serveur (format{" "}
+				L’identifiant du bénéficiaire est généré automatiquement par le serveur (format{" "}
 				<span className="font-mono">003CJT001</span>).
 			</p>
 
@@ -175,14 +175,11 @@ export function FamilyMemberCreateForm({
 export function BeneficiaryEditForm({
 	beneficiary,
 	submitting,
-	isAgent,
 	onSubmit,
 	onCancel,
 }: {
 	beneficiary: Beneficiary;
 	submitting: boolean;
-	/** True when `codeFamille = AGENT`: the agent route is used. */
-	isAgent: boolean;
 	onSubmit: (input: UpdateFamilyMemberInput) => Promise<void>;
 	onCancel: () => void;
 }) {
@@ -233,7 +230,7 @@ export function BeneficiaryEditForm({
 			<dl className="grid gap-2 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
 				<div>
 					<dt className="text-xs font-bold uppercase tracking-wide text-slate-400">
-						IDP
+						Identifiant du bénéficiaire
 					</dt>
 					<dd className="font-mono text-slate-800">{beneficiary.idp}</dd>
 				</div>
@@ -247,19 +244,9 @@ export function BeneficiaryEditForm({
 				</div>
 				<div>
 					<dt className="text-xs font-bold uppercase tracking-wide text-slate-400">
-						Matricule agent
+						Matricule de l’agent
 					</dt>
 					<dd className="font-mono text-slate-800">{beneficiary.matricule}</dd>
-				</div>
-				<div>
-					<dt className="text-xs font-bold uppercase tracking-wide text-slate-400">
-						Route utilisée
-					</dt>
-					<dd className="font-mono text-xs text-slate-600">
-						{isAgent
-							? `/agents/${beneficiary.matricule}`
-							: `/agent-families/${beneficiary.codeFamille === "CONJOINT" ? "spouses" : "children"}/:id`}
-					</dd>
 				</div>
 			</dl>
 
@@ -331,7 +318,7 @@ export function BeneficiaryObservationForm({
 			}}
 		>
 			<TextAreaField
-				label={`Observation — ${beneficiary.idp}`}
+				label={`Observation du bénéficiaire — ${beneficiary.nom} ${beneficiary.prenom}`}
 				value={observation}
 				onChange={setObservation}
 				rows={4}

@@ -6,6 +6,9 @@ export interface AuthContextValue {
   role: Role | null;
   loading: boolean;
   error: string | null;
+  theme: "light" | "dark";
+  setTheme: (theme: "light" | "dark") => void;
+  refreshUser: () => Promise<void>;
   logout: () => Promise<void>;
 }
 

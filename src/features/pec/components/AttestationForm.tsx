@@ -32,11 +32,11 @@ export function AttestationForm({
 		const service = servicePrestataire.trim();
 
 		if (!beneficiary.idp.trim())
-			found.push("L'IDP du bénéficiaire est obligatoire.");
+			found.push("L’identifiant du bénéficiaire est obligatoire.");
 		if (!Number.isInteger(parsedProviderID) || parsedProviderID < 1) {
 			found.push("Sélectionnez un prestataire valide.");
 		}
-		if (!datePEC) found.push("La date de PEC est obligatoire.");
+		if (!datePEC) found.push("La date de prise en charge est obligatoire.");
 		if (!nature) found.push("La nature de la prestation est obligatoire.");
 		else if (nature.length > 255) {
 			found.push(
@@ -78,7 +78,7 @@ export function AttestationForm({
 				<strong>
 					{beneficiary.nom} {beneficiary.prenom}
 				</strong>
-				{" — "}
+				{" — Identifiant : "}
 				<span className="font-mono">{beneficiary.idp}</span>
 			</p>
 

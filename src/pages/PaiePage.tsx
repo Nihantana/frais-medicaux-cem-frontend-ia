@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Download, Printer, RefreshCw, Search } from 'lucide-react';
 import { ErrorBlock, LoadingState, PageHeader } from '../components/ui';
 import { getPaieEtat, getPaieEtatIndividuel, type PaieEtat, type PaieEtatIndividuel } from '../features/invoice/services/paieAPI';
@@ -8,8 +8,8 @@ const formatMoney = (value: string | number | null | undefined) => value === nul
 const monthNow = () => new Date().toISOString().slice(0, 7);
 const monthTitle = (value: string) => new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(new Date(`${value}-01T00:00:00`)).toUpperCase();
 const lineValue = (line: Record<string, string | number | null>, key: string) => line[key] ?? '';
-const GLOBAL_HEADERS = ['IM', 'NOM ET PRENOM AGENT', 'Code Direction', 'Code / Agence', 'Montant Acte', '100% CEM', 'Dépassement', '80% CEM', '20% Agent', 'Total à la charge de l’Agent'];
-const INDIVIDUAL_HEADERS = ['Date de l’acte', 'NOM et PRENOM BENEFICIAIRE', 'Nom de l’établissement', 'Code_Acte', 'Montant Acte', '100% CEM', 'Dépassement', 'Obs Dépassement', '80% CEM', '20% Agent'];
+const GLOBAL_HEADERS = ['Matricule agent', 'Nom et prénom de l’agent', 'Direction', 'Agence / service', 'Montant de l’acte', '100% CEM', 'Dépassement', '80% CEM', '20% Agent', 'Total à la charge de l’agent'];
+const INDIVIDUAL_HEADERS = ['Date de l’acte', 'Nom et prénom du bénéficiaire', 'Nom de l’établissement', 'Code de l’acte', 'Montant de l’acte', '100% CEM', 'Dépassement', 'Observation sur le dépassement', '80% CEM', '20% Agent'];
 
 export default function PaiePage() {
   const [mois, setMois] = useState(monthNow());
@@ -18,9 +18,23 @@ export default function PaiePage() {
   const [individual, setIndividual] = useState<PaieEtatIndividuel | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  async function load() { setLoading(true); setError(null); setIndividual(null); try { setEtat(await getPaieEtat(mois)); } catch (caught: unknown) { setError(caught instanceof Error ? caught.message : 'Impossible de charger l’état de paie.'); } finally { setLoading(false); } }
-  useEffect(() => { void load(); }, []);
-  async function searchAgent() { const matricule = Number(im); if (!Number.isInteger(matricule) || matricule <= 0) { setError('Saisissez un IM valide.'); return; } setError(null); try { setIndividual(await getPaieEtatIndividuel(mois, matricule)); } catch (caught: unknown) { setError(caught instanceof Error ? caught.message : 'État individuel introuvable.'); } }
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setIndividual(null);
+    try {
+      setEtat(await getPaieEtat(mois));
+    } catch (caught: unknown) {
+      setError(caught instanceof Error ? caught.message : 'Impossible de charger l’état de paie.');
+    } finally {
+      setLoading(false);
+    }
+  }, [mois]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+  async function searchAgent() { const matricule = Number(im); if (!Number.isInteger(matricule) || matricule <= 0) { setError('Saisissez un matricule valide.'); return; } setError(null); try { setIndividual(await getPaieEtatIndividuel(mois, matricule)); } catch (caught: unknown) { setError(caught instanceof Error ? caught.message : 'État individuel introuvable.'); } }
   function exportGlobalExcel() {
     if (!etat) return;
     downloadPaieWorkbook({
@@ -36,7 +50,7 @@ export default function PaiePage() {
     const rows: Array<Array<string | number>> = [];
     for (const group of individual.groupes) for (const line of group.lignes) rows.push([lineValue(line, 'dateActe'), lineValue(line, 'nomPrenomBeneficiaire'), group.nomEtablissement, lineValue(line, 'codeActe'), lineValue(line, 'montantActe'), lineValue(line, 'cem100'), lineValue(line, 'depassement'), lineValue(line, 'obsDepassement'), lineValue(line, 'cem80'), lineValue(line, 'agent20')]);
     downloadPaieWorkbook({
-      filename: `etat-paie-${mois}-im-${individual.im}.xlsx`,
+      filename: `etat-paie-${mois}-matricule-${individual.im}.xlsx`,
       title: `ÉTAT DES RETENUES DES FRAIS MÉDICAUX – PAIE DU MOIS DE ${monthTitle(mois)}`,
       subtitle: `MATRICULE : ${individual.im}   |   NOM ET PRÉNOM AGENT : ${individual.nomPrenom}`,
       headers: INDIVIDUAL_HEADERS,
@@ -44,7 +58,78 @@ export default function PaiePage() {
       total: ['TOTAL GÉNÉRAL', '', '', '', individual.totalGeneral.montantActe, individual.totalGeneral.cem100, individual.totalGeneral.depassement, '', individual.totalGeneral.cem80, individual.totalGeneral.agent20],
     });
   }
-  return <div className="min-w-0 space-y-5"><PageHeader title="Retenue sur salaire" description="État conforme aux modèles global et individuel fournis." />{error && <ErrorBlock message={error} onRetry={() => void load()} />}<section className="panel flex min-w-0 flex-wrap items-end gap-3 p-4 print:hidden"><label className="label">Mois de paie<input type="month" className="field mt-1" value={mois} onChange={(event) => setMois(event.target.value)} /></label><button className="btn-primary" onClick={() => void load()} disabled={loading}><RefreshCw size={16} /> Actualiser</button><div className="ml-auto flex items-end gap-2"><label className="label">État par IM<input className="field mt-1" placeholder="Ex. 177" value={im} onChange={(event) => setIm(event.target.value)} /></label><button className="btn-secondary" onClick={() => void searchAgent()}><Search size={16} /> Consulter</button></div><button className="btn-secondary" onClick={individual ? exportIndividualExcel : exportGlobalExcel} disabled={individual ? !individual : !etat}><Download size={16} /> Excel</button><button className="btn-secondary" onClick={() => window.print()} disabled={!etat && !individual}><Printer size={16} /> PDF</button></section>{loading ? <LoadingState message="Chargement de l’état de paie…" /> : individual ? <IndividualReport individual={individual} mois={mois} onBack={() => setIndividual(null)} /> : <GlobalReport etat={etat} mois={mois} />}</div>;
+  return (
+    <div className="min-w-0 space-y-5">
+      <PageHeader
+        title="Retenue sur salaire"
+        description="Consultez et exportez les retenues liées aux frais médicaux."
+      />
+      {error && <ErrorBlock message={error} onRetry={() => void load()} />}
+
+      <section className="panel grid grid-cols-1 items-end gap-3 p-4 print:hidden md:grid-cols-[12rem_11rem] xl:grid-cols-[12rem_11rem_minmax(12rem,1fr)_auto_auto]">
+        <label className="flex min-w-0 flex-col gap-1.5 text-xs font-bold text-slate-600">
+          Mois de paie
+          <input
+            type="month"
+            className="field h-11"
+            value={mois}
+            onChange={(event) => setMois(event.target.value)}
+          />
+        </label>
+
+        <button
+          className="btn-primary h-11 w-full"
+          onClick={() => void load()}
+          disabled={loading}
+        >
+          <RefreshCw size={16} className={loading ? 'animate-spin' : undefined} />
+          Actualiser
+        </button>
+
+        <div className="grid min-w-0 grid-cols-[minmax(8rem,1fr)_auto] items-end gap-2 md:col-span-2 xl:col-span-1">
+          <label className="flex min-w-0 flex-col gap-1.5 text-xs font-bold text-slate-600">
+            État par matricule
+            <input
+              className="field h-11"
+              placeholder="Ex. 177"
+              value={im}
+              onChange={(event) => setIm(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') void searchAgent();
+              }}
+            />
+          </label>
+          <button className="btn-secondary h-11" onClick={() => void searchAgent()}>
+            <Search size={16} />
+            Consulter
+          </button>
+        </div>
+
+        <button
+          className="btn-secondary h-11"
+          onClick={individual ? exportIndividualExcel : exportGlobalExcel}
+          disabled={individual ? !individual : !etat}
+        >
+          <Download size={16} />
+          Excel
+        </button>
+        <button
+          className="btn-secondary h-11"
+          onClick={() => window.print()}
+          disabled={!etat && !individual}
+        >
+          <Printer size={16} />
+          PDF
+        </button>
+      </section>
+
+      {loading
+        ? <LoadingState message="Chargement de l’état de paie…" />
+        : individual
+          ? <IndividualReport individual={individual} mois={mois} onBack={() => setIndividual(null)} />
+          : <GlobalReport etat={etat} mois={mois} />}
+    </div>
+  );
 }
 
 function GlobalReport({ etat, mois }: { etat: PaieEtat | null; mois: string }) { const values = (agent: PaieEtat['agents'][number]) => [agent.im, agent.nomPrenom, agent.direction ?? '-', agent.serviceAgence ?? '-', agent.montantActe, agent.cem100, agent.depassement, agent.cem80, agent.agent20, agent.totalAgent]; return <section className="paie-report panel min-w-0 overflow-hidden"><ReportTitle title={`ÉTAT DES RETENUES DES FRAIS MÉDICAUX – PAIE DU MOIS DE ${monthTitle(mois)}`} /><ReportTable headers={GLOBAL_HEADERS} rows={etat?.agents.map((agent) => values(agent)) ?? []} total={['TOTAL GENERAL', '', '', '', ...(etat ? [etat.total.montantActe, etat.total.cem100, etat.total.depassement, etat.total.cem80, etat.total.agent20, etat.total.totalAgent] : [])]} /></section>; }

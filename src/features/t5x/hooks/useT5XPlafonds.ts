@@ -22,7 +22,7 @@ export default function useT5XPlafonds() {
 			setLoadError(
 				error instanceof Error
 					? error.message
-					: "Impossible de charger les plafonds T5.",
+					: "Impossible de charger les plafonds.",
 			);
 		} finally {
 			if (!isStale()) setIsLoading(false);

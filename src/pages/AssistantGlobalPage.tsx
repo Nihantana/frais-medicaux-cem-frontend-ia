@@ -16,7 +16,7 @@ const suggestions = [
   "Combien de factures sont en attente de validation ?",
   "Quelles factures ont des anomalies de contrôle ?",
   "Résume la situation globale des factures",
-  "Quelles factures n’ont aucune ligne T6 ?",
+  "Quelles factures ne comportent encore aucun frais médical détaillé ?",
 ];
 
 export default function AssistantGlobalPage() {

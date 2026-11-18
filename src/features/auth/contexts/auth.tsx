@@ -8,6 +8,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [theme, setThemeState] = useState<"light" | "dark">("light");
+
+  async function refreshUser(): Promise<void> {
+    setUser(await fetchMe());
+  }
+
+  function setTheme(nextTheme: "light" | "dark"): void {
+    setThemeState(nextTheme);
+    if (user !== null) {
+      localStorage.setItem(`theme:${user.id}`, nextTheme);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -16,6 +28,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(() => fetchMe())
       .then((data) => {
         if (!cancelled) {
+          setThemeState(
+            localStorage.getItem(`theme:${data.id}`) === "dark"
+              ? "dark"
+              : "light",
+          );
           setUser(data);
           setError(null);
         }
@@ -39,6 +56,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+  }, [theme]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -46,6 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: user?.role ?? null,
         loading,
         error,
+        theme,
+        setTheme,
+        refreshUser,
         logout: logoutKeycloak,
       }}
     >

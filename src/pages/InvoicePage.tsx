@@ -73,7 +73,7 @@ export default function FactureGlobalePage() {
 	const { rows, addRowId, selectedRowId, selectRow, isLoaded, loadError, reload, updateCell, addAttachment, removeAttachment, downloadAttachment, refreshRows, restoreRow } = useFactureGlobaleRows(prestataires);
 	const rowActions = useFactureGlobaleRowActions(rows, reload);
 	const rowEditing = useInvoiceRowEditing(rows, addRowId, updateCell, restoreRow, refreshRows, canEditRows);
-	const { containerRef, addRowRef, focusAddRow } = useScrollToAddInvoiceRow(isLoaded);
+	const { containerRef, addRowRef, isAddRowVisible, focusAddRow } = useScrollToAddInvoiceRow(isLoaded);
 	const activeRow = useMemo(
 		() => rows.find((row) => row.id === selectedRowId) ?? null,
 		[rows, selectedRowId],
@@ -249,8 +249,8 @@ export default function FactureGlobalePage() {
 						{rowEditing.saveError}
 					</p>
 				)}
-				<section className="panel flex min-h-0 flex-1 flex-col overflow-hidden">
-					<div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
+				<section className="panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+					<div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-4 py-2.5">
 						<div className="min-w-0 text-xs text-slate-500">
 							{activeRow ? <>Facture sélectionnée : <span className="font-bold text-slate-700">{activeRow.refSocial}</span></> : "Sélectionnez une facture pour utiliser les outils de suivi."}
 						</div>
@@ -294,6 +294,7 @@ export default function FactureGlobalePage() {
 							addRowId={addRowId}
 							activeRowId={rowEditing.activeRowId}
 							selectedRowId={selectedRowId}
+							isAddRowVisible={isAddRowVisible}
 							containerRef={containerRef}
 							addRowRef={addRowRef}
 							onRowSelect={(rowId) => {
@@ -332,31 +333,41 @@ export default function FactureGlobalePage() {
 							<button type="button" className="btn-ghost" aria-label="Fermer le panneau" onClick={() => setSupportPanel(null)}><X size={20} /></button>
 						</div>
 						<div className="min-h-0 flex-1 overflow-y-auto p-4">
-							{supportPanel === "assistant" ? <ControleFactureIAPanel factureId={activeRow?.id ?? null} rapport={controleIA.rapport} isLoading={controleIA.isLoading} error={controleIA.error} onRun={() => void controleIA.run()} disabled={!canActOnSelectedRow} /> : <DiscussionFacturePanel factureId={activeRow?.id ?? null} />}
+							{supportPanel === "assistant" ? <ControleFactureIAPanel key={activeRow?.id ?? "none"} factureId={activeRow?.id ?? null} rapport={controleIA.rapport} isLoading={controleIA.isLoading} error={controleIA.error} onRun={() => void controleIA.run()} disabled={!canActOnSelectedRow} /> : <DiscussionFacturePanel factureId={activeRow?.id ?? null} />}
 						</div>
 					</aside>
 				</div>
 			)}
 			{isLoaded && <>
 				{canEditRows && (
-					<div className="fixed bottom-12 right-8 z-30 flex items-center gap-3">
+					<div className="fixed bottom-6 right-6 z-30 flex max-w-[calc(100vw-2rem)] flex-wrap items-center gap-1 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-xl backdrop-blur sm:gap-1.5">
 						<CancelRowButton
-							ariaLabel="Réinitialiser la ligne active"
-							title="Réinitialiser la ligne active"
+							showLabel
+							label="Annuler"
+							ariaLabel="Annuler les modifications de la ligne active"
+							title="Annuler les modifications de la ligne active"
 							disabled={!rowEditing.hasActiveRow || rowEditing.isSaving}
 							onClick={rowEditing.cancelActiveRow}
 						/>
 						<SaveRowButton
+							showLabel
+							label="Enregistrer"
 							ariaLabel="Enregistrer la ligne active"
 							title="Enregistrer la ligne active"
 							disabled={!rowEditing.canSave || rowEditing.isSaving}
 							onClick={() => setIsSaveConfirmationOpen(true)}
 						/>
+						<span className="mx-1 h-7 w-px bg-slate-200" aria-hidden="true" />
 						<AddRowButton
+							showLabel
+							label="Nouvelle facture"
+							ariaLabel="Ajouter une nouvelle facture"
+							title="Ajouter une nouvelle facture"
 							disabled={rowEditing.hasActiveRow}
 							onClick={focusAddRow}
 						/>
-						<InvoiceFloatingCalculator />
+						<span className="mx-1 h-7 w-px bg-slate-200" aria-hidden="true" />
+						<InvoiceFloatingCalculator showLabel />
 					</div>
 				)}
 				{canActOnSelectedRow && openRowAction === "actions" && (

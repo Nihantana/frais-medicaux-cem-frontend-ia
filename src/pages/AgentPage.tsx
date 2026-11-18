@@ -219,7 +219,7 @@ export default function AgentPage() {
 	const columns: Column<AgentRow>[] = [
 		{
 			key: "matricule",
-			label: "IM",
+			label: "Matricule",
 			render: (row) => (
 				<span className="font-mono text-xs font-bold">
 					{String(row.matricule).padStart(3, "0")}
@@ -240,7 +240,7 @@ export default function AgentPage() {
 		},
 		{
 			key: "statutPEC",
-			label: "Statut PEC",
+			label: "Statut de prise en charge",
 			render: (row) => labelStatutPEC(row.statutPEC),
 		},
 		{
@@ -255,12 +255,12 @@ export default function AgentPage() {
 		},
 		{
 			key: "backOfficeFrontOffice",
-			label: "Back_O & Front_O",
+			label: "Affectation",
 			render: (row) => row.backOfficeFrontOffice,
 		},
 		{
 			key: "codeDirection",
-			label: "Cod_Dir",
+			label: "Code direction",
 			render: (row) => {
 				if (row.backOfficeFrontOffice === "AGENCE") return "AGENCE";
 				if (row.backOfficeFrontOffice === "RETRAITE") return "RET";
@@ -271,8 +271,8 @@ export default function AgentPage() {
 			key: "direction",
 			label: "Direction",
 			render: (row) => {
-				if (row.backOfficeFrontOffice === "RETRAITE") return "RETRAITE";
-				if (row.backOfficeFrontOffice === "AGENCE") return "AGENCE";
+				if (row.backOfficeFrontOffice === "RETRAITE") return "Retraité";
+				if (row.backOfficeFrontOffice === "AGENCE") return "Agence";
 				const codeDirection = serviceByCode.get(
 					row.codeService ?? "",
 				)?.codeDirection;
@@ -284,10 +284,10 @@ export default function AgentPage() {
 		},
 		{
 			key: "codeService",
-			label: "Cod_Serv / Cod_Agc",
+			label: "Code du service ou de l’agence",
 			render: (row) => {
-				if (row.statutPEC === "DIRECTEUR") return "DIRECTEUR";
-				if (row.backOfficeFrontOffice === "RETRAITE") return "RET";
+				if (row.statutPEC === "DIRECTEUR") return "Directeur";
+				if (row.backOfficeFrontOffice === "RETRAITE") return "Retraité";
 				return row.backOfficeFrontOffice === "DIRECTION"
 					? orDash(row.codeService)
 					: orDash(row.structureID);
@@ -295,9 +295,9 @@ export default function AgentPage() {
 		},
 		{
 			key: "serviceAgence",
-			label: "SERVICE / Agence",
+			label: "Service ou agence",
 			render: (row) => {
-				if (row.backOfficeFrontOffice === "RETRAITE") return "RETRAITE";
+				if (row.backOfficeFrontOffice === "RETRAITE") return "Retraité";
 				if (row.statutPEC === "DIRECTEUR") return "-";
 				if (row.backOfficeFrontOffice === "DIRECTION") {
 					return serviceByCode.get(row.codeService ?? "")?.nom ?? "—";
@@ -310,17 +310,17 @@ export default function AgentPage() {
 		},
 		{
 			key: "dateNaissance",
-			label: "Date_Naissance",
+			label: "Date de naissance",
 			render: (row) => formatDate(row.dateNaissance),
 		},
 		{
 			key: "dateEntree",
-			label: "Date_Entrée",
+			label: "Date d’entrée",
 			render: (row) => formatDate(row.dateEntree),
 		},
 		{
 			key: "observationMatricule",
-			label: "ObsIM",
+			label: "Observation agent",
 			render: (row) => orDash(row.observationMatricule),
 		},
 		{
@@ -353,7 +353,7 @@ export default function AgentPage() {
 				);
 			},
 		},
-		{ key: "parQui", label: "ParQui", render: () => "—" },
+		{ key: "parQui", label: "Créé par", render: () => "—" },
 	];
 
 	async function handleCreate(
@@ -723,7 +723,7 @@ export default function AgentPage() {
 				title="Carte professionnelle"
 				description={
 					cardPreviewTarget
-						? `${cardPreviewTarget.nom} ${cardPreviewTarget.prenom} · IM ${cardPreviewTarget.matricule}`
+						? `${cardPreviewTarget.nom} ${cardPreviewTarget.prenom} · Matricule ${cardPreviewTarget.matricule}`
 						: undefined
 				}
 				onClose={() => setCardPreviewTarget(null)}

@@ -12,10 +12,11 @@ export const ROUTES = {
   deletionRequests: "/demandes-suppression",
   invoice: "/factures",
   invoiceT6: "/factures/t6",
+  statistics: "/statistiques",
   paie: "/paie",
   assistant: "/assistant",
   T5ParAn: "/ParAn/:id/:label/:refSocial",
   T5Parseance: "/ParSeance/:id/:label/:refSocial",
   T5ParAnParActe: "/ParAnParActe/:id/:label/:refSocial",
-  T5X: "/T5X",
+  T5X: "/actes-prestations",
 } as const;

@@ -25,7 +25,7 @@ export default function useSearchIdp(searchIdp: SearchIdp) {
 			return response;
 		} catch (reason) {
 			if (currentRequest !== requestId.current) return null;
-			const message = reason instanceof Error ? reason.message : "Recherche IDP impossible.";
+			const message = reason instanceof Error ? reason.message : "Recherche de bénéficiaire impossible.";
 			setResult(null);
 			setError(message);
 			return null;
@@ -35,7 +35,7 @@ export default function useSearchIdp(searchIdp: SearchIdp) {
 	}, [searchIdp]);
 
 	const refresh = useCallback(async () => {
-		if (!idp) throw new Error("Aucun IDP à actualiser.");
+		if (!idp) throw new Error("Aucun bénéficiaire sélectionné pour l’actualisation.");
 		const currentRequest = ++requestId.current;
 		setIsLoading(true);
 		setError(null);
@@ -46,7 +46,7 @@ export default function useSearchIdp(searchIdp: SearchIdp) {
 			return response;
 		} catch (reason) {
 			if (currentRequest !== requestId.current) throw reason;
-			const message = reason instanceof Error ? reason.message : "Impossible d’actualiser les données IDP et T5.";
+			const message = reason instanceof Error ? reason.message : "Impossible d’actualiser les données de suivi des plafonds.";
 			setError(message);
 			throw reason instanceof Error ? reason : new Error(message);
 		} finally {

@@ -35,7 +35,15 @@ import type {
 
 const editableUpdateKeys = new Set<string>(personnelFactureGlobaleEditableColumns);
 const updateKeys = new Set<string>(FACTURE_GLOBALE_UPDATE_KEYS);
+const amountColumnKeys = new Set<string>(Object.values(numberColumn));
 const amountFormatter = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
+
+function invoiceCellClass(columnKey: string, width: string): string {
+    const amountClass = amountColumnKeys.has(columnKey)
+        ? "text-left text-sm font-semibold tabular-nums text-slate-700"
+        : "";
+    return `border-b border-slate-100 px-3 py-3 text-[13px] leading-5 ${width} ${amountClass}`;
+}
 
 const STATUS_LABELS: Record<string, string> = {
     ENREGISTREE: "Enregistrée",
@@ -104,6 +112,7 @@ export default function FactureGlobaleTable({
     addRowId,
     activeRowId,
     selectedRowId,
+    isAddRowVisible,
     containerRef,
     addRowRef,
     onRowSelect,
@@ -148,9 +157,9 @@ export default function FactureGlobaleTable({
     const visibleRows = useMemo(
         () => [
             ...filteredRows,
-            ...(!isRoleY && addRow ? [addRow] : [])
+            ...(!isRoleY && isAddRowVisible && addRow ? [addRow] : [])
         ],
-        [filteredRows, addRow, isRoleY]
+        [filteredRows, addRow, isRoleY, isAddRowVisible]
     );
 
     function isTextFilterKey(key: string): key is TextFilterKey {
@@ -208,9 +217,9 @@ export default function FactureGlobaleTable({
 
     return (
         <div ref={containerRef} className="min-h-0 flex-1 overflow-auto">
-            <table className="h-fit w-max min-w-full table-fixed border-collapse text-[13px]">
+            <table className="h-fit w-max min-w-full table-fixed border-separate border-spacing-0 text-[13px]">
 
-                <thead className="sticky top-0 z-10 bg-slate-50 text-left text-slate-600 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                <thead className="sticky top-0 z-10 bg-slate-50/95 text-left text-slate-600 backdrop-blur">
                     <tr>
                         {factureGlobaleColumns.map((column) => {
 
@@ -227,7 +236,7 @@ export default function FactureGlobaleTable({
                             return (
                                 <th
                                     key={column.key}
-                                    className={`relative border-b border-slate-200 px-4 py-3 text-left text-[10px] font-extrabold uppercase tracking-wide ${column.width} ${filterable ? "cursor-pointer hover:bg-slate-100" : ""} ${column.key === "majT5" ? "bg-amber-50 text-amber-800" : ""} ${isOpen ? "z-30" : ""}`}
+                                    className={`relative border-b border-slate-200 px-3 py-3.5 text-left text-[10px] font-bold uppercase leading-4 tracking-[0.055em] ${column.width} ${filterable ? "cursor-pointer transition-colors hover:bg-slate-100" : ""} ${column.key === "majT5" ? "bg-slate-100 text-slate-700" : ""} ${isOpen ? "z-30" : ""}`}
                                     onMouseEnter={() => filterable && (!pinnedFilter || pinnedFilter === column.key) && setOpenFilter(column.key)}
                                     onMouseLeave={() => isOpen && pinnedFilter !== column.key && setOpenFilter(null)}
                                     aria-expanded={filterable ? isOpen : undefined}
@@ -389,18 +398,28 @@ export default function FactureGlobaleTable({
                             </tr>
                         )}
 
-                    {visibleRows.map((row) => (
+                    {visibleRows.map((row, rowIndex) => (
                         <tr
                             key={row.id}
                             ref={row.id === addRowId ? addRowRef : undefined}
                             tabIndex={row.id === addRowId ? -1 : undefined}
                             onClick={() => onRowSelect(row.id)}
-                            className={`h-15 ${isRoleY ? "" : "cursor-pointer"} bg-white text-slate-900 transition-colors hover:bg-slate-50/70 ${row.id === addRowId ? "focus:relative focus:z-[1] focus:bg-blue-50 focus:[&>td]:border-y-2 focus:[&>td]:border-blue-600 focus:[&>td:first-child]:border-l-2 focus:[&>td:last-child]:border-r-2 focus:[&>td:first-child]:border-l-blue-600 focus:[&>td:last-child]:border-r-blue-600" : ""} ${(activeRowId ?? selectedRowId) === row.id ? "relative z-[1] bg-blue-50 [&>td]:border-y-2 [&>td]:border-blue-600 [&>td:first-child]:border-l-2 [&>td:last-child]:border-r-2 [&>td:first-child]:border-l-blue-600 [&>td:last-child]:border-r-blue-600" : ""}`}
+                            className={`group h-16 ${isRoleY ? "" : "cursor-pointer"} text-slate-800 transition-colors duration-150 ${
+                                rowIndex % 2 === 1 ? "bg-slate-50/35" : "bg-white"
+                            } hover:bg-slate-50 ${
+                                row.id === addRowId
+                                    ? "invoice-add-row-enter bg-red-50/30 shadow-[inset_3px_0_0_#ef4444]"
+                                    : ""
+                            } ${
+                                (activeRowId ?? selectedRowId) === row.id
+                                    ? "relative z-[1] bg-red-50/55 shadow-[inset_3px_0_0_#dc2626]"
+                                    : ""
+                            }`}
                         >
 
                             {isRoleY ? (
                                 factureGlobaleColumns.map((column) => {
-                                    const cellClass = `px-3 py-3 ${column.width}`;
+                                    const cellClass = invoiceCellClass(column.key, column.width);
                                     if (column.key === "statut") return renderStatusCell(row, cellClass);
                                     if (column.key === "piecesJointes") {
                                         return (
@@ -420,11 +439,11 @@ export default function FactureGlobaleTable({
                                                 key={column.key}
                                                 options={majT5Options}
                                                 refSocial={row.refSocial}
-                                                className={`${cellClass} bg-amber-50 text-amber-800`}
+                                                className={`${cellClass} bg-slate-50 text-slate-700`}
                                                 isLocked={activeRowId !== null}
                                             />
                                         ) : (
-                                            <td key={column.key} className={`${cellClass} bg-amber-50 text-amber-800`} />
+                                            <td key={column.key} className={`${cellClass} bg-slate-50 text-slate-700`} />
                                         );
                                     }
 
@@ -450,7 +469,7 @@ export default function FactureGlobaleTable({
                                     const onSave = (nextValue: string) =>
                                         onCellChange(row.id, column.key, nextValue);
 
-                                    const cellClass = `px-3 py-3 ${column.width}`;
+                                    const cellClass = invoiceCellClass(column.key, column.width);
                                     if (column.key === "statut") return renderStatusCell(row, cellClass);
 
                                     if (column.key === "piecesJointes") {
@@ -472,12 +491,12 @@ export default function FactureGlobaleTable({
                                                 key={column.key}
                                                 options={majT5Options}
                                                 refSocial={row.refSocial}
-                                                className={`${cellClass} bg-amber-50 text-amber-800`}
+                                                className={`${cellClass} bg-slate-50 text-slate-700`}
                                             />
                                         ) : (
                                             <td
                                                 key={column.key}
-                                                className={`${cellClass} bg-amber-50 text-amber-800`}
+                                                className={`${cellClass} bg-slate-50 text-slate-700`}
                                             />
                                         );
                                     }
@@ -598,7 +617,7 @@ export default function FactureGlobaleTable({
                                     const onSave = (nextValue: string) =>
                                         onCellChange(row.id, column.key, nextValue);
 
-                                    const cellClass = `px-3 py-3 ${column.width}`;
+                                    const cellClass = invoiceCellClass(column.key, column.width);
                                     const isAddRowLocked = activeRowId !== null && activeRowId !== row.id;
                                     if (column.key === "statut") return renderStatusCell(row, cellClass);
 
@@ -621,7 +640,7 @@ export default function FactureGlobaleTable({
                                         return (
                                             <td
                                                 key={column.key}
-                                                className={`${cellClass} bg-amber-50 text-amber-800 ${isAddRowLocked ? "cursor-not-allowed bg-slate-100 text-slate-400" : ""}`}
+                                                className={`${cellClass} bg-slate-50 text-slate-700 ${isAddRowLocked ? "cursor-not-allowed bg-slate-100 text-slate-400" : ""}`}
                                             />
                                         );
                                     }

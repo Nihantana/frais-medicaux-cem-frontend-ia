@@ -25,7 +25,7 @@ export default function useSuiviCibles() {
 			setError(
 				reason instanceof Error
 					? reason.message
-					: "Impossible de charger les cibles T5.",
+					: "Impossible de charger les plafonds.",
 			);
 		} finally {
 			if (!isStale()) setIsLoading(false);

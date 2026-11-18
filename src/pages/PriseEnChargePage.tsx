@@ -62,6 +62,12 @@ function referenceFor(attestation: Attestation): string {
 	return year ? `${year} - ${id}` : id;
 }
 
+const ATTESTATION_STATUS_LABELS: Record<AttestationStatut, string> = {
+	EN_ATTENTE: "En attente",
+	VALIDEE: "Validée",
+	REFUSEE: "Refusée",
+};
+
 export default function PriseEnChargePage() {
 	const [attestations, setAttestations] = useState<Attestation[]>([]);
 	const [agents, setAgents] = useState<AgentItem[]>([]);
@@ -264,7 +270,7 @@ export default function PriseEnChargePage() {
 		setSearchedBeneficiary(null);
 		setSearchError(null);
 		if (!idp) {
-			setSearchError("Saisissez un IDP pour lancer la recherche.");
+			setSearchError("Saisissez l’identifiant du bénéficiaire pour lancer la recherche.");
 			return;
 		}
 
@@ -369,7 +375,7 @@ export default function PriseEnChargePage() {
 		},
 		{
 			key: "idpBeneficiaire",
-			label: "IDP",
+			label: "Identifiant bénéficiaire",
 			render: (row) => <span className="font-mono">{row.idpBeneficiaire}</span>,
 		},
 		{
@@ -382,7 +388,7 @@ export default function PriseEnChargePage() {
 		},
 		{
 			key: "codeFamille",
-			label: "Code_Fam",
+			label: "Lien familial",
 			render: (row) =>
 				row.beneficiary ? labelCodeFamille(row.beneficiary.codeFamille) : "—",
 		},
@@ -398,12 +404,12 @@ export default function PriseEnChargePage() {
 		},
 		{
 			key: "matricule",
-			label: "IM",
+			label: "Matricule agent",
 			render: (row) => orDash(row.beneficiary?.matricule),
 		},
 		{
 			key: "observationIDP",
-			label: "Obs IDP",
+			label: "Observation bénéficiaire",
 			render: (row) => orDash(row.beneficiary?.observationIDP),
 		},
 		{
@@ -414,7 +420,7 @@ export default function PriseEnChargePage() {
 		},
 		{
 			key: "statutPEC",
-			label: "Statut PEC",
+			label: "Statut de prise en charge",
 			render: (row) => (row.agent ? labelStatutPEC(row.agent.statutPEC) : "—"),
 		},
 		{
@@ -428,7 +434,7 @@ export default function PriseEnChargePage() {
 		},
 		{
 			key: "observationMatricule",
-			label: "ObsIM",
+			label: "Observation agent",
 			render: (row) => orDash(row.agent?.observationMatricule),
 		},
 		{
@@ -447,7 +453,7 @@ export default function PriseEnChargePage() {
 			render: (row) => orDash(row.servicePrestataire),
 		},
 		{ key: "naturePrestation", label: "Acte / Prestation" },
-		{ key: "reference", label: "Ref PEC", render: (row) => referenceFor(row) },
+		{ key: "reference", label: "Référence de prise en charge", render: (row) => referenceFor(row) },
 		{
 			key: "dateValidation",
 			label: "Date Validation",
@@ -466,7 +472,7 @@ export default function PriseEnChargePage() {
 								: "amber"
 					}
 				>
-					{row.statut.replace("_", " ")}
+					{ATTESTATION_STATUS_LABELS[row.statut]}
 				</Badge>
 			),
 		},
@@ -477,7 +483,7 @@ export default function PriseEnChargePage() {
 			<ToastViewport />
 			<PageHeader
 				title="Gestion des Prises en charge"
-				description="Recherche par IDP, création, validation et rejet des attestations."
+				description="Recherchez un bénéficiaire, puis créez, validez ou refusez sa prise en charge."
 				actions={
 					<button className="btn-secondary" onClick={() => void refresh()}>
 						<RefreshCw size={16} /> Actualiser
@@ -494,7 +500,8 @@ export default function PriseEnChargePage() {
 						<input
 							className="field pr-11"
 							value={idpDraft}
-							placeholder="Saisir l'IDP du concerné"
+							placeholder="Identifiant du bénéficiaire"
+							aria-label="Identifiant du bénéficiaire"
 							disabled={searching}
 							onChange={(event) => {
 								setIdpDraft(event.target.value);
@@ -506,7 +513,7 @@ export default function PriseEnChargePage() {
 							<button
 								type="button"
 								className="btn-ghost absolute right-2 top-1/2 -translate-y-1/2"
-								aria-label="Effacer la recherche IDP"
+								aria-label="Effacer la recherche du bénéficiaire"
 								title="Effacer"
 								disabled={searching}
 								onClick={() => {
@@ -556,7 +563,7 @@ export default function PriseEnChargePage() {
 										{searchedBeneficiary.nom} {searchedBeneficiary.prenom}
 									</h2>
 									<p className="font-mono text-sm text-slate-500">
-										IDP {searchedBeneficiary.idp}
+										Identifiant du bénéficiaire : {searchedBeneficiary.idp}
 									</p>
 								</div>
 							</div>
@@ -599,7 +606,7 @@ export default function PriseEnChargePage() {
 										</div>
 										<div className="sm:col-span-2">
 											<dt className="text-xs text-slate-500">
-												Observation IDP
+												Observation du bénéficiaire
 											</dt>
 											<dd className="mt-0.5 font-medium text-slate-800">
 												{orDash(searchedBeneficiary.observationIDP)}
@@ -629,9 +636,11 @@ export default function PriseEnChargePage() {
 									</p>
 									<dl className="mt-3 grid gap-x-4 gap-y-3 text-sm sm:grid-cols-2">
 										<div>
-											<dt className="text-xs text-slate-500">Statut PEC</dt>
+											<dt className="text-xs text-slate-500">Statut de prise en charge</dt>
 											<dd className="mt-0.5 font-medium text-slate-800">
-												{orDash(searchedAgent?.statutPEC)}
+												{searchedAgent
+													? labelStatutPEC(searchedAgent.statutPEC)
+													: "—"}
 											</dd>
 										</div>
 										<div>
@@ -686,7 +695,7 @@ export default function PriseEnChargePage() {
 				<input
 					className="field"
 					value={query}
-					placeholder="Rechercher une référence, un IDP, un prestataire…"
+					placeholder="Rechercher une référence, un bénéficiaire ou un prestataire…"
 					onChange={(event) => setQuery(event.target.value)}
 				/>
 				<select

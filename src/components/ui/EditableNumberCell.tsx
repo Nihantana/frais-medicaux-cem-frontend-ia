@@ -49,56 +49,58 @@ export default function EditableNumberCell({
 
 	return (
 		<td
-			className={`relative h-full truncate px-3 text-xs ${isLocked ? "cursor-not-allowed bg-slate-100 text-slate-400" : "cursor-pointer hover:bg-slate-50"} ${className}`}
+			className={`relative h-full truncate text-left text-sm font-semibold tabular-nums ${isLocked ? "cursor-not-allowed bg-slate-100 text-slate-400" : "cursor-text hover:bg-red-50/40"} ${className}`}
 			onClick={startEditing}
 			onMouseLeave={closeIfUnchanged}
 		>
 			{editing ? (
 				<>
-					<input
-						autoFocus
-						type="text"
-						inputMode="decimal"
-						className="h-full w-full pr-14 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-600"
-						placeholder={placeholder}
-						value={draft}
-						onChange={(event) => {
-							const nextDraft = event.target.value;
-							if (numericPattern.test(nextDraft)) setDraft(nextDraft);
-						}}
-						onKeyDown={(event) => {
-							if (event.key === "Enter") commit();
-							if (event.key === "Escape") setEditing(false);
-						}}
-					/>
-					<span className="absolute right-1 top-1/2 flex -translate-y-1/2 gap-1">
-						<button
-							type="button"
-							className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50"
-							onClick={(event) => {
-								event.stopPropagation();
-								commit();
+					<div className="flex min-w-0 items-center gap-1">
+						<input
+							autoFocus
+							type="text"
+							inputMode="decimal"
+							className="h-9 min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 text-left text-sm font-semibold tabular-nums text-slate-800 shadow-sm transition focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100"
+							placeholder={placeholder}
+							value={draft}
+							onChange={(event) => {
+								const nextDraft = event.target.value;
+								if (numericPattern.test(nextDraft)) setDraft(nextDraft);
 							}}
-							aria-label="Valider"
-						>
-							<Check size={14} />
-						</button>
-						<button
-							type="button"
-							className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
-							onClick={(event) => {
-								event.stopPropagation();
-								setEditing(false);
+							onKeyDown={(event) => {
+								if (event.key === "Enter") commit();
+								if (event.key === "Escape") setEditing(false);
 							}}
-							aria-label="Annuler"
-						>
-							<X size={14} />
-						</button>
-					</span>
+						/>
+						<span className="flex shrink-0 gap-0.5">
+							<button
+								type="button"
+								className="rounded-md p-1.5 text-emerald-600 transition hover:bg-emerald-50"
+								onClick={(event) => {
+									event.stopPropagation();
+									commit();
+								}}
+								aria-label="Valider"
+							>
+								<Check size={14} />
+							</button>
+							<button
+								type="button"
+								className="rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100"
+								onClick={(event) => {
+									event.stopPropagation();
+									setEditing(false);
+								}}
+								aria-label="Annuler"
+							>
+								<X size={14} />
+							</button>
+						</span>
+					</div>
 				</>
 			) : (
 				value === 0 && emptyValue
-					? <span className="absolute inset-0 flex items-center justify-center">{emptyValue}</span>
+					? <span className="absolute inset-0 flex items-center justify-start pl-3">{emptyValue}</span>
 					: numberFormatter.format(value)
 			)}
 		</td>

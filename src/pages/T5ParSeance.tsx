@@ -83,7 +83,7 @@ export default function T5ParSeance() {
     cible?.type === "acte" ? cible.id : undefined,
   );
   if (isCibleLoading)
-    return <LoadingState message="Chargement de la configuration T5…" />;
+    return <LoadingState message="Chargement des règles de plafond…" />;
   if (cibleError)
     return (
       <ErrorBlock message={cibleError} onRetry={() => void reloadCible()} />
@@ -91,7 +91,7 @@ export default function T5ParSeance() {
   if (!cible || cible.typeContrainte !== TypeContrainte.PAR_SEANCE) {
     return (
       <ErrorBlock
-        message="La cible chargée ne correspond pas à un T5 par séance."
+        message="Les règles de plafond ne correspondent pas à cette page."
         onRetry={() => void reloadCible()}
       />
     );
@@ -102,7 +102,7 @@ export default function T5ParSeance() {
     return (
       <ErrorBlock message={actesError} onRetry={() => void reloadActes()} />
     );
-  const pageTitle = cible.label || label || "T5 par séance";
+  const pageTitle = cible.label || label || "Suivi des séances autorisées";
 
   return (
     <div className="flex h-[calc(100dvh-10rem)] min-h-[24rem] flex-col gap-2">
@@ -126,11 +126,11 @@ export default function T5ParSeance() {
       />
       <section className="panel flex min-h-0 flex-1 flex-col overflow-hidden">
         {isLookupLoading ? (
-          <LoadingState message="Recherche de l’agent et chargement des données T5…" />
+          <LoadingState message="Recherche du bénéficiaire et chargement de son suivi…" />
         ) : !lookupResult ? (
           <T5SearchPrompt refSocial={refSocial} />
         ) : !isReady ? (
-          <LoadingState message="Chargement des données T5…" />
+          <LoadingState message="Chargement du suivi des dépenses…" />
         ) : (
           <>
             {saveError && <ErrorBlock message={saveError} />}

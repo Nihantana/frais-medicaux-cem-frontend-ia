@@ -58,7 +58,7 @@ export default function PrestataireDropdownCell({
 			<button
 				type="button"
 				disabled={isLocked}
-				className="flex w-full items-center justify-between gap-2 text-left disabled:cursor-not-allowed"
+				className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left text-sm font-medium text-slate-700 transition hover:bg-red-50/40 disabled:cursor-not-allowed"
 				aria-label="Sélectionner un établissement"
 				aria-haspopup="listbox"
 				aria-expanded={open}
@@ -77,7 +77,7 @@ export default function PrestataireDropdownCell({
 					onMouseEnter={cancelClose}
 					onMouseLeave={scheduleClose}
 				>
-					<label className="flex items-center gap-2 rounded-md border border-slate-300 px-2">
+					<label className="flex items-center gap-2 rounded-md border border-slate-300 px-2 focus-within:border-red-300 focus-within:ring-2 focus-within:ring-red-100">
 						<Search size={14} className="shrink-0 text-slate-400" />
 						<input
 							autoFocus

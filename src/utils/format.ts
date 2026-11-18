@@ -99,8 +99,8 @@ const STATUT_PEC_LABELS: Record<string, string> = {
 };
 
 const AFFECTATION_LABELS: Record<string, string> = {
-	AGENCE: "Agence (front office)",
-	DIRECTION: "Direction (back office)",
+	AGENCE: "En agence",
+	DIRECTION: "Au siège",
 	RETRAITE: "Retraité",
 };
 

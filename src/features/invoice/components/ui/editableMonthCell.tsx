@@ -113,7 +113,7 @@ export default function EditableMonthCell({
 
 	return (
 		<td
-			className={`relative h-full truncate px-3 text-xs ${isLocked ? "cursor-not-allowed bg-slate-100 text-slate-400" : "cursor-pointer hover:bg-slate-50"} ${className}`}
+			className={`relative h-full truncate px-3 text-xs ${isLocked ? "cursor-not-allowed bg-slate-100 text-slate-400" : "cursor-text hover:bg-red-50/40"} ${className}`}
 			onClick={startEditing}
 			onMouseLeave={closeIfUnchanged}
 		>
@@ -123,7 +123,7 @@ export default function EditableMonthCell({
 						<input
 							autoFocus
 							type="month"
-							className="h-full w-full pr-14 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-600"
+							className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 pr-14 text-xs text-slate-800 shadow-sm transition focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100"
 							value={draft}
 							onChange={(event) => setDraft(event.target.value)}
 							onKeyDown={handleKeyDown}
@@ -140,7 +140,7 @@ export default function EditableMonthCell({
 					>
 						<select
 							autoFocus
-							className="rounded border border-slate-300 bg-white px-1 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-600"
+							className="rounded-md border border-slate-300 bg-white px-1 py-1 text-xs focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100"
 							value={month}
 							onChange={(event) => setMonth(Number(event.target.value))}
 						>
@@ -149,7 +149,7 @@ export default function EditableMonthCell({
 							))}
 						</select>
 						<select
-							className="rounded border border-slate-300 bg-white px-1 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-600"
+							className="rounded-md border border-slate-300 bg-white px-1 py-1 text-xs focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100"
 							value={year}
 							onChange={(event) => setYear(Number(event.target.value))}
 						>

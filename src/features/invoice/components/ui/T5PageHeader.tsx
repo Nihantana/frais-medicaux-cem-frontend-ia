@@ -21,7 +21,7 @@ export default function T5PageHeader({
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-red-700">
-            Suivi des plafonds T5
+            Suivi des plafonds de frais médicaux
           </p>
           <h1 className="mt-1 truncate text-2xl font-extrabold tracking-tight text-slate-900">
             {title}

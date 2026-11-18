@@ -180,32 +180,32 @@ export default function T5XConfigurationPage() {
 		/>
 		<div className="flex h-[calc(100dvh-10rem)] min-h-[24rem] flex-col">
 			<PageHeader
-				title="Gestion des prestations/actes"
-				description="Gérez les prestations / actes et leurs catégories. Vous pouvez ajouter, modifier ou supprimer des entrées dans les tableaux ci-dessous."
+				title="Gestion des actes et prestations"
+				description="Ajoutez, modifiez ou supprimez les actes médicaux et leurs catégories."
 			/>
-			<div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Tableaux de configuration T5">
+			<div className="mb-4 inline-flex w-fit flex-wrap rounded-xl border border-slate-200 bg-white p-1 shadow-sm" role="tablist" aria-label="Gestion des actes et catégories">
 				<button
 					type="button"
 					role="tab"
 					aria-selected={activeTable === "categories"}
 					disabled={hasActiveRow && activeTable !== "categories"}
-					className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTable === "categories" ? "bg-red-600 text-white shadow-sm" : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"}`}
+					className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTable === "categories" ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"}`}
 					onClick={() => handleTabChange("categories")}
 				>
-					Catégories acte
+					Catégories de prestations
 				</button>
 				<button
 					type="button"
 					role="tab"
 					aria-selected={activeTable === "actes"}
 					disabled={hasActiveRow && activeTable !== "actes"}
-					className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTable === "actes" ? "bg-red-600 text-white shadow-sm" : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"}`}
+					className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTable === "actes" ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"}`}
 					onClick={() => handleTabChange("actes")}
 				>
 					Actes
 				</button>
 			</div>
-			<section className="panel flex min-h-0 flex-1 flex-col overflow-hidden">
+			<section className="panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
 				{loadError && (
 					<div className="p-3 pb-0">
 						<ErrorBlock
@@ -252,23 +252,29 @@ export default function T5XConfigurationPage() {
 					</>
 				)}
 				{!isLoading && (
-					<div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-white px-4 py-3">
+					<div className="mx-4 mb-4 flex shrink-0 items-center justify-end gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
 						<DeleteRowButton
+							showLabel
+							label="Supprimer"
 							ariaLabel="Supprimer la ligne sélectionnée"
 							title="Supprimer la ligne sélectionnée"
 							disabled={!canDelete}
 							onClick={() => setIsDeleteConfirmationOpen(true)}
 						/>						<SaveRowButton
+							showLabel
+							label="Enregistrer"
 							disabled={!activeEditor.canSaveRow || activeEditor.isSaving}
 							onClick={handleSaveClick}
 						/>
 						<CancelRowButton
+							showLabel
+							label="Annuler"
 							ariaLabel="Annuler les modifications de la ligne active"
 							title="Annuler les modifications de la ligne active"
 							disabled={activeEditor.activeRowId === null || activeEditor.isSaving}
 							onClick={activeEditor.cancelActiveRow}
 						/>
-						<AddRowButton disabled={activeEditor.activeRowId !== null} onClick={() => focusAddRow(tableKey)} />
+						<AddRowButton showLabel label="Nouvelle ligne" disabled={activeEditor.activeRowId !== null} onClick={() => focusAddRow(tableKey)} />
 					</div>
 				)}
 			</section>

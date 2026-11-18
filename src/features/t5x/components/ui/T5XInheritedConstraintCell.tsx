@@ -1,5 +1,15 @@
 import { Lock, TriangleAlert } from "lucide-react";
 
+const LABELS: Record<string, string> = {
+	SANS_CONTRAINTE: "Sans suivi",
+	PAR_AN: "Suivi annuel",
+	PAR_ACTE: "Suivi par acte",
+	PAR_SEANCE: "Suivi par séance",
+	PAR_AN_PAR_ACTE: "Suivi annuel et par acte",
+	EXCLU: "Exclu",
+	SUR_DECISION_DG: "Sur décision",
+};
+
 type Props = {
 	value: string;
 	className?: string;
@@ -19,7 +29,7 @@ export default function T5XInheritedConstraintCell({
 				title="Contrainte héritée de la catégorie : elle n’est pas modifiable au niveau de l’acte."
 			>
 				<Lock size={13} className="shrink-0 text-slate-400" />
-				<span className="truncate font-medium">{value}</span>
+				<span className="truncate font-medium">{LABELS[value] ?? value}</span>
 				{hasConflict && (
 					<span
 						className="ml-auto inline-flex items-center gap-1 text-[10px] font-semibold uppercase text-amber-700"
