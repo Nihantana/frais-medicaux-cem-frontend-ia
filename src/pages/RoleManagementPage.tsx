@@ -2,6 +2,7 @@ import { Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { Modal } from "../components/ui/Modal";
+import { TextField } from "../components/ui/form";
 import { useAuth } from "../features/auth";
 import {
   createRole,
@@ -301,29 +302,21 @@ export default function RoleManagementPage() {
         width="max-w-lg"
       >
         <form className="space-y-4" onSubmit={(event) => void submit(event)}>
-          <label className="block text-sm font-semibold text-slate-700">
-            Code
-            <input
-              className="input mt-1 w-full uppercase"
-              required
-              disabled={editing !== null}
-              value={form.code}
-              onChange={(event) =>
-                setForm({ ...form, code: event.target.value })
-              }
-            />
-          </label>
-          <label className="block text-sm font-semibold text-slate-700">
-            Libellé
-            <input
-              className="input mt-1 w-full"
-              required
-              value={form.libelle}
-              onChange={(event) =>
-                setForm({ ...form, libelle: event.target.value })
-              }
-            />
-          </label>
+          <TextField
+            label="Code"
+            value={form.code}
+            onChange={(value) => setForm({ ...form, code: value })}
+            required
+            disabled={editing !== null}
+            placeholder="Ex: MON_ROLE"
+          />
+          <TextField
+            label="Libellé"
+            value={form.libelle}
+            onChange={(value) => setForm({ ...form, libelle: value })}
+            required
+            placeholder="Ex: Mon rôle personnalisé"
+          />
           <div className="flex justify-end gap-2">
             <button
               type="button"

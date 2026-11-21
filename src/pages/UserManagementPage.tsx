@@ -2,6 +2,7 @@ import { Pencil, Plus, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { Modal } from "../components/ui/Modal";
+import { SelectField, TextField } from "../components/ui/form";
 import { useAuth } from "../features/auth";
 import {
   createUser,
@@ -366,12 +367,12 @@ export default function UserManagementPage() {
         </section>
       </div>
 
-      <Modal
+<Modal
         open={creating || editing !== null}
         title={
-          editing === null ? "Créer un utilisateur" : "Modifier l’utilisateur"
+          editing === null ? "Créer un utilisateur" : "Modifier l'utilisateur"
         }
-        description="L’email doit correspondre à l’utilisateur Keycloak."
+        description="L'email doit correspondre a l'utilisateur Keycloak."
         onClose={() => {
           setCreating(false);
           setEditing(null);
@@ -379,31 +380,23 @@ export default function UserManagementPage() {
         width="max-w-lg"
       >
         <form className="space-y-4" onSubmit={(event) => void submit(event)}>
+          <TextField
+            label="Nom"
+            value={form.nom}
+            onChange={(value) => setForm({ ...form, nom: value })}
+            required
+            placeholder="Ex: Jean Dupont"
+          />
+          <TextField
+            label="Email Keycloak"
+            type="email"
+            value={form.email}
+            onChange={(value) => setForm({ ...form, email: value })}
+            required
+            placeholder="Ex: jean.dupont@cem.mg"
+          />
           <label className="block text-sm font-semibold text-slate-700">
-            Nom
-            <input
-              className="input mt-1 w-full"
-              required
-              value={form.nom}
-              onChange={(event) =>
-                setForm({ ...form, nom: event.target.value })
-              }
-            />
-          </label>
-          <label className="block text-sm font-semibold text-slate-700">
-            Email Keycloak
-            <input
-              className="input mt-1 w-full"
-              type="email"
-              required
-              value={form.email}
-              onChange={(event) =>
-                setForm({ ...form, email: event.target.value })
-              }
-            />
-          </label>
-          <label className="block text-sm font-semibold text-slate-700">
-            Rôles
+            Roles
             <div className="mt-2 grid grid-cols-2 gap-2">
               {roles.map((option) => (
                 <label
