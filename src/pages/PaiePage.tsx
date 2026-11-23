@@ -48,14 +48,19 @@ export default function PaiePage() {
   function exportIndividualExcel() {
     if (!individual) return;
     const rows: Array<Array<string | number>> = [];
-    for (const group of individual.groupes) for (const line of group.lignes) rows.push([lineValue(line, 'dateActe'), lineValue(line, 'nomPrenomBeneficiaire'), group.nomEtablissement, lineValue(line, 'codeActe'), lineValue(line, 'montantActe'), lineValue(line, 'cem100'), lineValue(line, 'depassement'), lineValue(line, 'obsDepassement'), lineValue(line, 'cem80'), lineValue(line, 'agent20')]);
+    for (const group of individual.groupes) {
+      for (const line of group.lignes) {
+        rows.push([lineValue(line, 'dateActe'), lineValue(line, 'nomPrenomBeneficiaire'), group.nomEtablissement, lineValue(line, 'codeActe'), lineValue(line, 'montantActe'), lineValue(line, 'cem100'), lineValue(line, 'depassement'), lineValue(line, 'obsDepassement'), lineValue(line, 'cem80'), lineValue(line, 'agent20')]);
+      }
+      rows.push(['', '', 'TOTAL ÉTABLISSEMENT :', '', group.totalEtablissement.montantActe, group.totalEtablissement.cem100, group.totalEtablissement.depassement, '', group.totalEtablissement.cem80, group.totalEtablissement.agent20]);
+    }
     downloadPaieWorkbook({
       filename: `etat-paie-${mois}-matricule-${individual.im}.xlsx`,
       title: `ÉTAT DES RETENUES DES FRAIS MÉDICAUX – PAIE DU MOIS DE ${monthTitle(mois)}`,
       subtitle: `MATRICULE : ${individual.im}   |   NOM ET PRÉNOM AGENT : ${individual.nomPrenom}`,
       headers: INDIVIDUAL_HEADERS,
       rows,
-      total: ['TOTAL GÉNÉRAL', '', '', '', individual.totalGeneral.montantActe, individual.totalGeneral.cem100, individual.totalGeneral.depassement, '', individual.totalGeneral.cem80, individual.totalGeneral.agent20],
+      total: ['TOTAL GÉNÉRAL :', '', '', '', individual.totalGeneral.montantActe, individual.totalGeneral.cem100, individual.totalGeneral.depassement, '', individual.totalGeneral.cem80, individual.totalGeneral.agent20],
     });
   }
   return (
@@ -134,9 +139,18 @@ export default function PaiePage() {
 
 function GlobalReport({ etat, mois }: { etat: PaieEtat | null; mois: string }) { const values = (agent: PaieEtat['agents'][number]) => [agent.im, agent.nomPrenom, agent.direction ?? '-', agent.serviceAgence ?? '-', agent.montantActe, agent.cem100, agent.depassement, agent.cem80, agent.agent20, agent.totalAgent]; return <section className="paie-report panel min-w-0 overflow-hidden"><ReportTitle title={`ÉTAT DES RETENUES DES FRAIS MÉDICAUX – PAIE DU MOIS DE ${monthTitle(mois)}`} /><ReportTable headers={GLOBAL_HEADERS} rows={etat?.agents.map((agent) => values(agent)) ?? []} total={['TOTAL GENERAL', '', '', '', ...(etat ? [etat.total.montantActe, etat.total.cem100, etat.total.depassement, etat.total.cem80, etat.total.agent20, etat.total.totalAgent] : [])]} /></section>; }
 
-function IndividualReport({ individual, mois, onBack }: { individual: PaieEtatIndividuel; mois: string; onBack: () => void }) { const rows = individual.groupes.flatMap((group) => group.lignes.map((line) => [lineValue(line, 'dateActe'), lineValue(line, 'nomPrenomBeneficiaire'), group.nomEtablissement, lineValue(line, 'codeActe'), lineValue(line, 'montantActe'), lineValue(line, 'cem100'), lineValue(line, 'depassement'), lineValue(line, 'obsDepassement'), lineValue(line, 'cem80'), lineValue(line, 'agent20')])); return <section className="paie-report panel min-w-0 overflow-hidden"><div className="print:hidden"><button className="btn-secondary m-4" onClick={onBack}>Retour à l’état global</button></div><ReportTitle title={`ÉTAT DES RETENUES DES FRAIS MÉDICAUX – PAIE DU MOIS DE ${monthTitle(mois)}`} subtitle={`MATRICULE : ${individual.im}   |   NOM et PRENOM AGENT : ${individual.nomPrenom}`} /><ReportTable headers={INDIVIDUAL_HEADERS} rows={rows} /></section>; }
+function IndividualReport({ individual, mois, onBack }: { individual: PaieEtatIndividuel; mois: string; onBack: () => void }) {
+  const rows: Array<Array<string | number>> = [];
+  for (const group of individual.groupes) {
+    for (const line of group.lignes) {
+      rows.push([lineValue(line, 'dateActe'), lineValue(line, 'nomPrenomBeneficiaire'), group.nomEtablissement, lineValue(line, 'codeActe'), lineValue(line, 'montantActe'), lineValue(line, 'cem100'), lineValue(line, 'depassement'), lineValue(line, 'obsDepassement'), lineValue(line, 'cem80'), lineValue(line, 'agent20')]);
+    }
+    rows.push(['', '', 'TOTAL ÉTABLISSEMENT :', '', group.totalEtablissement.montantActe, group.totalEtablissement.cem100, group.totalEtablissement.depassement, '', group.totalEtablissement.cem80, group.totalEtablissement.agent20]);
+  }
+  return <section className="paie-report panel min-w-0 overflow-hidden"><div className="print:hidden"><button className="btn-secondary m-4" onClick={onBack}>Retour à l’état global</button></div><ReportTitle title={`ÉTAT DES RETENUES DES FRAIS MÉDICAUX – PAIE DU MOIS DE ${monthTitle(mois)}`} subtitle={`MATRICULE : ${individual.im}   |   NOM et PRENOM AGENT : ${individual.nomPrenom}`} /><ReportTable headers={INDIVIDUAL_HEADERS} rows={rows} total={['TOTAL GÉNÉRAL :', '', '', '', individual.totalGeneral.montantActe, individual.totalGeneral.cem100, individual.totalGeneral.depassement, '', individual.totalGeneral.cem80, individual.totalGeneral.agent20]} /></section>;
+}
 
-function ReportTable({ headers, rows, total }: { headers: string[]; rows: Array<Array<string | number>>; total?: Array<string | number> }) { return <div className="paie-report-scroll w-full min-w-0 overflow-x-auto"><table className="min-w-[1000px] w-full border-collapse text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr>{headers.map((header) => <th key={header} className="max-w-[190px] whitespace-normal break-words border-b border-slate-200 px-3 py-3 text-left leading-tight">{header}</th>)}</tr></thead><tbody>{rows.map((row, rowIndex) => <tr key={rowIndex} className="border-b border-slate-100">{row.map((value, index) => <td key={index} className="max-w-[240px] whitespace-normal break-words px-3 py-3 text-left">{index > 3 && index !== 7 ? formatMoney(value) : value || '-'}</td>)}</tr>)}</tbody>{total && <tfoot><tr>{total.map((value, index) => <td key={index} className="border-t-2 border-slate-200 px-3 py-3 text-left font-bold">{index > 3 ? formatMoney(value) : value}</td>)}</tr></tfoot>}</table>{rows.length === 0 && <p className="p-8 text-center text-slate-500">Aucune retenue clôturée pour ce mois.</p>}</div>; }
+function ReportTable({ headers, rows, total }: { headers: string[]; rows: Array<Array<string | number>>; total?: Array<string | number> }) { return <div className="paie-report-scroll w-full min-w-0 overflow-x-auto"><table className="min-w-[1000px] w-full border-collapse text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr>{headers.map((header) => <th key={header} className="max-w-[190px] whitespace-normal break-words border-b border-slate-200 px-3 py-3 text-left leading-tight">{header}</th>)}</tr></thead><tbody>{rows.map((row, rowIndex) => { const isEtablissementTotal = String(row[2] ?? '').includes('TOTAL ÉTABLISSEMENT'); return <tr key={rowIndex} className={isEtablissementTotal ? 'border-b border-slate-200 bg-slate-50 font-bold' : 'border-b border-slate-100'}>{row.map((value, index) => <td key={index} className="max-w-[240px] whitespace-normal break-words px-3 py-3 text-left">{index > 3 && index !== 7 ? formatMoney(value) : value || '-'}</td>)}</tr>; })}</tbody>{total && <tfoot><tr>{total.map((value, index) => <td key={index} className="border-t-2 border-slate-200 px-3 py-3 text-left font-bold">{index > 3 ? formatMoney(value) : value}</td>)}</tr></tfoot>}</table>{rows.length === 0 && <p className="p-8 text-center text-slate-500">Aucune retenue clôturée pour ce mois.</p>}</div>; }
 
 function ReportTitle({ title, subtitle }: { title: string; subtitle?: string }) { return <div className="border-b border-slate-200 p-4"><h2 className="break-words text-lg font-extrabold leading-tight text-slate-900">{title}</h2>{subtitle && <p className="mt-2 whitespace-pre-line break-words text-sm font-semibold text-slate-600">{subtitle}</p>}</div>; }
 type PaieWorkbook = {
@@ -181,7 +195,7 @@ function downloadPaieWorkbook(workbook: PaieWorkbook) {
     if (numericColumns.has(index) && value !== '' && Number.isFinite(Number(value))) return `<c r="${ref}" s="${style === 4 ? 6 : 5}"><v>${Number(value)}</v></c>`;
     return `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${xml(value)}</t></is></c>`;
   };
-  const dataRows = allRows.map((row, rowIndex) => { const isTotal = Boolean(workbook.total) && rowIndex === allRows.length - 1; const style = isTotal ? 4 : 3; return `<row r="${firstTableRow + 1 + rowIndex}"${isTotal ? ' ht="22" customHeight="1"' : ''}>${row.map((value, index) => cell(value, index, firstTableRow + 1 + rowIndex, style)).join('')}</row>`; }).join('');
+  const dataRows = allRows.map((row, rowIndex) => { const isGeneralTotal = Boolean(workbook.total) && rowIndex === allRows.length - 1; const isEtablissementTotal = String(row[2] ?? '').includes('TOTAL ÉTABLISSEMENT'); const style = isGeneralTotal ? 4 : isEtablissementTotal ? 4 : 3; const isTotalRow = isGeneralTotal || isEtablissementTotal; return `<row r="${firstTableRow + 1 + rowIndex}"${isTotalRow ? ' ht="22" customHeight="1"' : ''}>${row.map((value, index) => cell(value, index, firstTableRow + 1 + rowIndex, style)).join('')}</row>`; }).join('');
   const subtitleRow = workbook.subtitle ? `<row r="2" ht="22" customHeight="1"><c r="A2" s="1" t="inlineStr"><is><t>${xml(workbook.subtitle)}</t></is></c></row>` : '';
   const lastRow = firstTableRow + allRows.length;
   // In the SpreadsheetML schema, autoFilter must precede mergeCells. Excel repairs a

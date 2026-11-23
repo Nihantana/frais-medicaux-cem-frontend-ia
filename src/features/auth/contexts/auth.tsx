@@ -1,17 +1,23 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { fetchMe } from "../services/auth";
+import { fetchMe, fetchMyPermissions } from "../services/auth";
 import { initializeKeycloak, logoutKeycloak } from "../services/keycloak";
 import type { User } from "../../../types/auth";
 import { AuthContext } from "./AuthContext";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [theme, setThemeState] = useState<"light" | "dark">("light");
 
   async function refreshUser(): Promise<void> {
-    setUser(await fetchMe());
+    const [nextUser, nextPermissions] = await Promise.all([
+      fetchMe(),
+      fetchMyPermissions(),
+    ]);
+    setUser(nextUser);
+    setPermissions(nextPermissions);
   }
 
   function setTheme(nextTheme: "light" | "dark"): void {
@@ -25,8 +31,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     initializeKeycloak()
-      .then(() => fetchMe())
-      .then((data) => {
+      .then(async () => {
+        const [data, grantedPermissions] = await Promise.all([
+          fetchMe(),
+          fetchMyPermissions(),
+        ]);
+        return { data, grantedPermissions };
+      })
+      .then(({ data, grantedPermissions }) => {
         if (!cancelled) {
           setThemeState(
             localStorage.getItem(`theme:${data.id}`) === "dark"
@@ -34,12 +46,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               : "light",
           );
           setUser(data);
+          setPermissions(grantedPermissions);
           setError(null);
         }
       })
       .catch((cause: unknown) => {
         if (!cancelled) {
           setUser(null);
+          setPermissions([]);
           setError(
             cause instanceof Error
               ? cause.message
@@ -65,7 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        role: user?.role ?? null,
+        role: user?.roles[0] ?? null,
+        permissions,
+        hasPermission: (permission: string) =>
+          permissions.includes(permission),
         loading,
         error,
         theme,

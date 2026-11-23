@@ -35,37 +35,43 @@ import {
 } from "../../features/auth/services/auth";
 import { IMAGE_ACCEPT, validateImageFile } from "../../utils/image";
 
-type NavLinkEntry = { to: string; label: string; icon: LucideIcon };
+type NavLinkEntry = {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  permission: string;
+};
 type NavSectionEntry = { section: string };
 type NavEntry = NavLinkEntry | NavSectionEntry;
 
 const nav: NavEntry[] = [
-  { to: "/tableau-de-bord", label: "Tableau de bord", icon: LayoutDashboard },
+  { to: "/tableau-de-bord", label: "Tableau de bord", icon: LayoutDashboard, permission: "reporting.read" },
   { section: "Gestion" },
-  { to: "/agents", label: "Agents", icon: Users },
-  { to: "/beneficiaires", label: "Bénéficiaires", icon: UserRound },
-  { to: "/prestataires", label: "Prestataires", icon: Stethoscope },
-  { to: "/pec", label: "Prises en charge", icon: ShieldCheck },
-  { to: "/factures", label: "Factures", icon: Receipt },
-  { to: "/statistiques", label: "Statistiques", icon: ChartNoAxesCombined },
-  { to: "/assistant", label: "Assistant global", icon: Sparkles },
-  { to: "/factures/t6", label: "Détail des frais médicaux", icon: ClipboardPlus },
-  { to: "/paie", label: "Retenue sur salaire", icon: WalletCards },
-  { to: "/actes-prestations", label: "Actes et prestations", icon: ClipboardPlus },
+  { to: "/agents", label: "Agents", icon: Users, permission: "agents.read" },
+  { to: "/beneficiaires", label: "Bénéficiaires", icon: UserRound, permission: "beneficiaries.read" },
+  { to: "/prestataires", label: "Prestataires", icon: Stethoscope, permission: "providers.read" },
+  { to: "/pec", label: "Prises en charge", icon: ShieldCheck, permission: "attestations.read" },
+  { to: "/factures", label: "Factures", icon: Receipt, permission: "invoices.read" },
+  { to: "/statistiques", label: "Statistiques", icon: ChartNoAxesCombined, permission: "reporting.read" },
+  { to: "/assistant", label: "Assistant global", icon: Sparkles, permission: "assistant.use" },
+  { to: "/factures/t6", label: "Détail des frais médicaux", icon: ClipboardPlus, permission: "t6.read" },
+  { to: "/paie", label: "Retenue sur salaire", icon: WalletCards, permission: "payroll.read" },
+  { to: "/actes-prestations", label: "Actes et prestations", icon: ClipboardPlus, permission: "reference-data.read" },
   { section: "Paramétrage" },
-  { to: "/referentiels", label: "Référentiels", icon: Settings },
-  { to: "/utilisateurs", label: "Utilisateurs", icon: Users },
-  { to: "/roles", label: "Rôles et permissions", icon: ShieldCheck },
-  { to: "/audit", label: "Audit et sessions", icon: ClipboardList },
+  { to: "/referentiels", label: "Référentiels", icon: Settings, permission: "reference-data.read" },
+  { to: "/utilisateurs", label: "Utilisateurs", icon: Users, permission: "admin.manage" },
+  { to: "/roles", label: "Rôles et permissions", icon: ShieldCheck, permission: "admin.manage" },
+  { to: "/audit", label: "Audit et sessions", icon: ClipboardList, permission: "audit.read" },
   {
     to: "/demandes-suppression",
     label: "Demandes de suppression",
     icon: ClipboardCheck,
+    permission: "deletions.manage",
   },
 ];
 
 export default function Sidebar({ children }: { children: React.ReactNode }) {
-  const { user, logout, refreshUser, theme, setTheme } = useAuth();
+  const { user, logout, refreshUser, theme, setTheme, hasPermission } = useAuth();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -218,15 +224,30 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             Navigation
           </div>
           <nav className="space-y-1">
-            {nav.map((item, idx) =>
-              "section" in item ? (
-                <div
-                  key={`section-${idx}`}
-                  className={`px-3 pb-2 pt-5 text-[10px] font-extrabold uppercase tracking-[.18em] text-slate-400 ${collapsed ? "lg:hidden" : ""}`}
-                >
-                  {item.section}
-                </div>
-              ) : (
+            {nav.map((item, idx) => {
+              if ("section" in item) {
+                const nextSection = nav.findIndex(
+                  (entry, entryIndex) =>
+                    entryIndex > idx && "section" in entry,
+                );
+                const end = nextSection < 0 ? nav.length : nextSection;
+                const hasVisibleLink = nav
+                  .slice(idx + 1, end)
+                  .some(
+                    (entry) =>
+                      "to" in entry && hasPermission(entry.permission),
+                  );
+                return hasVisibleLink ? (
+                  <div
+                    key={`section-${idx}`}
+                    className={`px-3 pb-2 pt-5 text-[10px] font-extrabold uppercase tracking-[.18em] text-slate-400 ${collapsed ? "lg:hidden" : ""}`}
+                  >
+                    {item.section}
+                  </div>
+                ) : null;
+              }
+              if (!hasPermission(item.permission)) return null;
+              return (
                 <NavLink
                   key={item.to}
                   to={item.to}
@@ -240,20 +261,10 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                     {item.label}
                   </span>
                 </NavLink>
-              ),
-            )}
+              );
+            })}
           </nav>
         </div>
-        {!collapsed && (
-          <div className="border-t border-slate-100 p-3">
-            <div className="rounded-xl bg-slate-50 p-3">
-              <div className="text-xs font-bold text-slate-800">
-                {displayName}
-              </div>
-              <div className="text-[10px] text-slate-400">{user?.role}</div>
-            </div>
-          </div>
-        )}
       </aside>
 
       <div
@@ -278,7 +289,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             <span className="font-bold text-slate-700">{current}</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <NotificationBell />
+            {hasPermission("notifications.read") && <NotificationBell />}
             <button
               onClick={() => {
                 setAccountView("overview");
@@ -294,6 +305,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                 initials={initials}
                 className="h-9 w-9 bg-red-100 text-xs text-red-700"
               />
+              <span className="hidden max-w-44 truncate text-sm font-bold text-slate-700 md:block">
+                {displayName}
+              </span>
               <ChevronDown
                 size={15}
                 className="hidden text-slate-400 sm:block"
@@ -333,7 +347,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                 <div className="truncate font-bold text-slate-900">
                   {displayName}
                 </div>
-                <div className="text-sm text-slate-500">{user?.role}</div>
+                <div className="text-sm text-slate-500">
+                  {user?.roles.join(", ") || "Utilisateur"}
+                </div>
                 <div className="mt-1 truncate text-xs text-slate-400">
                   {user?.email}
                 </div>

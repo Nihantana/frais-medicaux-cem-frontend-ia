@@ -7,6 +7,10 @@
  * and every value typed in a form is sent back as a plain calendar date.
  */
 
+export function formatDateDisplay(value?: string | null): string {
+	return formatDate(value);
+}
+
 /** ISO string (or anything date-like) to the `YYYY-MM-DD` expected by `<input type="date">`. */
 export function toDateInputValue(value?: string | null): string {
 	if (!value) return "";

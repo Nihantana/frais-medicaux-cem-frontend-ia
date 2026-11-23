@@ -20,10 +20,14 @@ import { resolveProviderConventionUrl } from "../services/api";
 import { requestDeletion } from "../features/deletions/services/deletions";
 import type { CreateProviderInput, Provider } from "../types/api";
 import { errorMessage } from "../utils/errors";
+import { useAuth } from "../features/auth";
 import { formatDate, labelProviderStatus, orDash } from "../utils/format";
 import { notify } from "../utils/notify";
 
 export default function PrestatairePage() {
+	const { hasPermission } = useAuth();
+	const canWriteProviders = hasPermission("providers.write");
+	const canManageDeletions = hasPermission("deletions.manage");
 	const referentials = useReferentials();
 
 	const [providers, setProviders] = useState<Provider[]>([]);
@@ -306,9 +310,11 @@ export default function PrestatairePage() {
 						<button className="btn-secondary" onClick={() => void refresh()}>
 							<RefreshCw size={16} /> Actualiser
 						</button>
-						<button className="btn-primary" onClick={() => setCreateOpen(true)}>
-							<Plus size={16} /> Nouveau prestataire
-						</button>
+						{canWriteProviders && (
+							<button className="btn-primary" onClick={() => setCreateOpen(true)}>
+								<Plus size={16} /> Nouveau prestataire
+							</button>
+						)}
 					</>
 				}
 			/>
@@ -399,8 +405,8 @@ export default function PrestatairePage() {
 						rows={visible}
 						columns={columns}
 						empty="Aucun prestataire pour ces critères."
-						onEdit={(row) => setEditTarget(row)}
-						onDelete={(row) => void handleDelete(row)}
+						onEdit={canWriteProviders ? (row) => setEditTarget(row) : undefined}
+						onDelete={canManageDeletions ? (row) => void handleDelete(row) : undefined}
 					/>
 				)}
 			</div>

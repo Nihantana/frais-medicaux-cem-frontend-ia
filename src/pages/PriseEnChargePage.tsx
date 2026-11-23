@@ -54,6 +54,7 @@ import {
 	orDash,
 } from "../utils/format";
 import { notify } from "../utils/notify";
+import { useAuth } from "../features/auth";
 
 function referenceFor(attestation: Attestation): string {
 	const date = attestation.createdAt || attestation.datePEC;
@@ -69,6 +70,9 @@ const ATTESTATION_STATUS_LABELS: Record<AttestationStatut, string> = {
 };
 
 export default function PriseEnChargePage() {
+	const { hasPermission } = useAuth();
+	const canWriteAttestations = hasPermission("attestations.write");
+	const canValidateAttestations = hasPermission("attestations.validate");
 	const [attestations, setAttestations] = useState<Attestation[]>([]);
 	const [agents, setAgents] = useState<AgentItem[]>([]);
 	const [providers, setProviders] = useState<Provider[]>([]);
@@ -682,12 +686,14 @@ export default function PriseEnChargePage() {
 								</section>
 							</div>
 						</div>
-						<button
-							className="btn-primary shrink-0"
-							onClick={() => setCreateOpen(true)}
-						>
-							<Plus size={16} /> Démarrer la prise en charge
-						</button>
+						{canWriteAttestations && (
+							<button
+								className="btn-primary shrink-0"
+								onClick={() => setCreateOpen(true)}
+							>
+								<Plus size={16} /> Démarrer la prise en charge
+							</button>
+						)}
 					</div>
 				)}
 			</div>
@@ -735,7 +741,7 @@ export default function PriseEnChargePage() {
 											>
 												<Eye size={15} />
 											</button>
-											<button
+											{canValidateAttestations && <button
 												className="btn-ghost text-emerald-700"
 												title="Valider l'attestation"
 												aria-label="Valider l'attestation"
@@ -747,8 +753,8 @@ export default function PriseEnChargePage() {
 												}
 											>
 												<Check size={15} />
-											</button>
-											<button
+											</button>}
+											{canValidateAttestations && <button
 												className="btn-ghost text-red-600"
 												title="Rejeter l'attestation"
 												aria-label="Rejeter l'attestation"
@@ -760,7 +766,7 @@ export default function PriseEnChargePage() {
 												}
 											>
 												<X size={15} />
-											</button>
+											</button>}
 										</>
 									)
 								: undefined

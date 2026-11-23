@@ -68,8 +68,8 @@ export default function T5ParAnParActe() {
   } = useT5Actes(categorieId);
   const lookupResult = useLookupResult();
   const isLookupLoading = useLookupLoading();
-  const { role } = useAuth();
-  const canEditRows = role !== "CHEF";
+  const { hasPermission } = useAuth();
+  const canEditRows = hasPermission("follow-up.write");
   const {
     rows,
     isReady,

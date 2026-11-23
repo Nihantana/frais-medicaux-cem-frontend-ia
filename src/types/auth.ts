@@ -4,15 +4,12 @@ export type Role =
   | "ADJOINT"
   | "CHEF_SERVICE"
   | "DRH"
-  | "ADMINISTRATEUR"
-  | "OPERATEUR"
-  | "CHEF";
+  | "ADMINISTRATEUR";
 
 export interface User {
   id: number;
   nom: string;
   email: string;
-  role: Role;
   roles: Role[];
   hasPhoto: boolean;
 }

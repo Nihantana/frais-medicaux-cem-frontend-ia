@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { DataTable, type Column } from "../components/ui/DataTable";
 import { ErrorBlock, LoadingState, Modal, PageHeader } from "../components/ui";
+import { useAuth } from "../features/auth";
 import { listActes } from "../services/acte-api";
 import {
   cloturerFacture,
@@ -35,6 +36,7 @@ import {
   type UpdateFactureLineBody,
 } from "../features/invoice/services/serviceAPI";
 import type { components } from "../api/schema";
+import { formatDate } from "../utils/format";
 
 type Facture = FactureListResponse[number];
 type Acte = components["schemas"]["ActeResponseDto"];
@@ -117,7 +119,7 @@ const compareAmounts = (
     ? null
     : leftCents === rightCents;
 };
-const dateOnly = (value: string): string => value.slice(0, 10);
+const dateOnly = (value: string): string => formatDate(value);
 const incrementMonth = (value: string): string => {
   const [year, month] = value.split("-").map(Number);
   const date = new Date(Date.UTC(year, month, 1));
@@ -125,6 +127,11 @@ const incrementMonth = (value: string): string => {
 };
 
 export default function T6Page() {
+  const { hasPermission } = useAuth();
+  const canWriteT6 = hasPermission("t6.write");
+  const canClosePayroll = hasPermission("payroll.close");
+  const canReadReporting =
+    hasPermission("reporting.read") || hasPermission("payroll.read");
   const [factures, setFactures] = useState<Facture[]>([]);
   const [actes, setActes] = useState<Acte[]>([]);
   const [selectedFactureId, setSelectedFactureId] = useState("");
@@ -139,6 +146,8 @@ export default function T6Page() {
   const [clipboardError, setClipboardError] = useState<string | null>(null);
   const [copiedRefSociale, setCopiedRefSociale] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
+  const [depassementActeManuel, setDepassementActeManuel] = useState(false);
+  const [depassementPlafondManuel, setDepassementPlafondManuel] = useState(false);
   const [editingLineId, setEditingLineId] = useState<number | null>(null);
   const [lineFormOpen, setLineFormOpen] = useState(false);
   const [clotureConfirmationOpen, setClotureConfirmationOpen] = useState(false);
@@ -223,7 +232,7 @@ export default function T6Page() {
       const [facturesResult, actesResult, paiesResult] = await Promise.all([
         getFactures(),
         listActes(),
-        getPaieMois(),
+        canReadReporting ? getPaieMois() : Promise.resolve([]),
       ]);
       setFactures(facturesResult);
       setActes(actesResult);
@@ -243,7 +252,7 @@ export default function T6Page() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [canReadReporting]);
 
   const loadLines = useCallback(
     async (factureId?: number) => {
@@ -376,11 +385,15 @@ export default function T6Page() {
     setEditingLineId(null);
     setEditingFactureId(null);
     setDraft(emptyDraft());
+    setDepassementActeManuel(false);
+    setDepassementPlafondManuel(false);
     setLineFormOpen(true);
   }
   function startEditing(line: LigneAffichee) {
     setEditingLineId(line.id);
     setEditingFactureId(line.facture.id);
+    setDepassementActeManuel(false);
+    setDepassementPlafondManuel(false);
     setDraft({
       libelle: line.libelle,
       dateActe: dateOnly(line.dateActe),
@@ -393,8 +406,8 @@ export default function T6Page() {
       montantDepassementPlafond: line.montantDepassementPlafond,
       observationDepassement: line.observationDepassement ?? "",
       moisAffectation: line.moisAffectation
-        ? dateOnly(line.moisAffectation)
-        : emptyDraft().moisAffectation,
+        ? line.moisAffectation.slice(0, 7)
+        : emptyDraft().moisAffectation.slice(0, 7),
     });
     setLineFormOpen(true);
   }
@@ -402,6 +415,8 @@ export default function T6Page() {
     setEditingLineId(null);
     setEditingFactureId(null);
     setDraft(emptyDraft());
+    setDepassementActeManuel(false);
+    setDepassementPlafondManuel(false);
     setLineFormOpen(false);
   }
   function stopRapprochementClose() {
@@ -499,17 +514,25 @@ export default function T6Page() {
   }
 
   function buildLineBody(): CreateFactureLineBody | UpdateFactureLineBody {
+    const moisAffectationMatch = /^([0-9]{4}-[0-9]{2})(?:-[0-9]{2})?/.exec(draft.moisAffectation);
+    const moisAffectation = moisAffectationMatch
+      ? `${moisAffectationMatch[1]}-01`
+      : `${draft.moisAffectation.slice(0, 7)}-01`;
     return {
       libelle: draft.libelle.trim(),
       dateActe: draft.dateActe,
       idp: draft.idp.trim(),
       acteId: Number(draft.acteId || acteFromLibelle?.id),
       montantActe: Number(draft.montantActe),
-      montantDepassementActe: Number(draft.montantDepassementActe || 0),
-      montantDepassementPlafond: Number(draft.montantDepassementPlafond || 0),
+      ...(depassementActeManuel
+        ? { montantDepassementActe: Number(draft.montantDepassementActe || 0) }
+        : {}),
+      ...(depassementPlafondManuel
+        ? { montantDepassementPlafond: Number(draft.montantDepassementPlafond || 0) }
+        : {}),
       ...(draft.numPec ? { numPec: Number(draft.numPec) } : {}),
       refPaie: draft.refPaie.trim() || null,
-      moisAffectation: `${draft.moisAffectation.slice(0, 7)}-01`,
+      moisAffectation,
       ...(draft.observationDepassement.trim()
         ? { observationDepassement: draft.observationDepassement.trim() }
         : {}),
@@ -619,6 +642,7 @@ export default function T6Page() {
   }
 
   const fieldsDisabled =
+    !canWriteT6 ||
     selectedFacture === null ||
     isSaving ||
     Boolean(selectedFacture.dateCloture);
@@ -626,7 +650,8 @@ export default function T6Page() {
     formFacture === null || isSaving || Boolean(formFacture.dateCloture);
   const activeFactureId =
     editingFactureId ?? (selectedFactureId ? Number(selectedFactureId) : null);
-  const canEditDisplayedLines = selectedFacture?.dateCloture == null;
+  const canEditDisplayedLines =
+    canWriteT6 && selectedFacture?.dateCloture == null;
   const columns: Column<LigneAffichee>[] = [
     {
       key: "moisAffectation",
@@ -988,7 +1013,7 @@ export default function T6Page() {
                     Statut facture : {selectedFacture.statut}
                   </div>
                 </div>
-                <button
+                {canClosePayroll && <button
                   type="button"
                   className="btn-primary w-full justify-center"
                   onClick={openClotureConfirmation}
@@ -998,7 +1023,7 @@ export default function T6Page() {
                   {selectedFacture.dateCloture
                     ? "Facture clôturée"
                     : "Clôturer définitivement"}
-                </button>
+                </button>}
               </div>
             ) : null}
           </section>
@@ -1139,14 +1164,14 @@ export default function T6Page() {
                 Détail des frais
               </h2>
               <div className="flex gap-2">
-                <button
+                {canWriteT6 && <button
                   type="button"
                   className="btn-primary"
                   onClick={openNewLine}
                   disabled={fieldsDisabled}
                 >
                   <Plus size={17} /> Ajouter une ligne
-                </button>
+                </button>}
                 <button
                   type="button"
                   className="btn-secondary"
@@ -1374,9 +1399,10 @@ export default function T6Page() {
                     step="0.01"
                     className="field mt-1"
                     value={draft.montantDepassementActe}
-                    onChange={(event) =>
-                      updateDraft("montantDepassementActe", event.target.value)
-                    }
+                    onChange={(event) => {
+                      setDepassementActeManuel(true);
+                      updateDraft("montantDepassementActe", event.target.value);
+                    }}
                     disabled={formFieldsDisabled}
                   />
                 </label>
@@ -1388,12 +1414,13 @@ export default function T6Page() {
                     step="0.01"
                     className="field mt-1"
                     value={draft.montantDepassementPlafond}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      setDepassementPlafondManuel(true);
                       updateDraft(
                         "montantDepassementPlafond",
                         event.target.value,
-                      )
-                    }
+                      );
+                    }}
                     disabled={formFieldsDisabled}
                   />
                 </label>

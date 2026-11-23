@@ -64,8 +64,10 @@ export default function FactureGlobalePage() {
 	const [serviceSortie, setServiceSortie] = useState("");
 	const [rowActionError, setRowActionError] = useState<string | null>(null);
 	const [supportPanel, setSupportPanel] = useState<"assistant" | "discussion" | null>(null);
-	const { role } = useAuth();
-	const canEditRows = role !== "CHEF";
+	const { hasPermission } = useAuth();
+	const canEditRows = hasPermission("invoices.write");
+	const canSendForValidation = hasPermission("envoi-validation") || canEditRows;
+	const canValidateInvoices = hasPermission("invoices.validate");
 	const [destinataires, setDestinataires] = useState<Array<{ id: number; nom: string; roles: string[] }>>([]);
 	const [destinatairesError, setDestinatairesError] = useState<string | null>(null);
 	const { prestataires, error: prestatairesError, reload: reloadPrestataires } = usePrestataires();
@@ -78,12 +80,12 @@ export default function FactureGlobalePage() {
 		() => rows.find((row) => row.id === selectedRowId) ?? null,
 		[rows, selectedRowId],
 	);
-	const canActOnSelectedRow = selectedRowId !== null && activeRow !== null && !rowEditing.hasActiveRow;
+	const canActOnSelectedRow = (canEditRows || canValidateInvoices || canSendForValidation) && selectedRowId !== null && activeRow !== null && !rowEditing.hasActiveRow;
 	const controleIA = useControleFactureIA(activeRow?.id ?? null);
 
 	useEffect(() => {
-		if (!canEditRows) return;
-		void Promise.all([getUtilisateurs({ role: "ADJOINT" }), getUtilisateurs({ role: "CHEF" })])
+		if (!canSendForValidation) return;
+		void Promise.all([getUtilisateurs({ role: "ADJOINT" }), getUtilisateurs({ role: "CHEF_SERVICE" })])
 			.then(([adjoints, chefs]) => {
 				setDestinataires([...adjoints, ...chefs]);
 				setDestinatairesError(null);
@@ -91,7 +93,7 @@ export default function FactureGlobalePage() {
 			.catch((error: unknown) => {
 				setDestinatairesError(error instanceof Error ? error.message : "Impossible de charger les destinataires.");
 			});
-	}, [canEditRows]);
+	}, [canSendForValidation]);
 
 	function resetValidationForm() {
 		setValidationDate("");
@@ -255,12 +257,12 @@ export default function FactureGlobalePage() {
 							{activeRow ? <>Facture sélectionnée : <span className="font-bold text-slate-700">{activeRow.refSocial}</span></> : "Sélectionnez une facture pour utiliser les outils de suivi."}
 						</div>
 						<div className="flex items-center gap-2">
-							<button type="button" className="btn-secondary min-h-9 px-3 py-1.5 text-xs" onClick={() => setSupportPanel("discussion")} disabled={!activeRow}>
+							{hasPermission("discussion.use") && <button type="button" className="btn-secondary min-h-9 px-3 py-1.5 text-xs" onClick={() => setSupportPanel("discussion")} disabled={!activeRow}>
 								<MessageSquare size={15} /> Discussion
-							</button>
-							<button type="button" className="btn-secondary min-h-9 px-3 py-1.5 text-xs" onClick={() => setSupportPanel("assistant")} disabled={!activeRow}>
+							</button>}
+							{hasPermission("verification.use") && <button type="button" className="btn-secondary min-h-9 px-3 py-1.5 text-xs" onClick={() => setSupportPanel("assistant")} disabled={!activeRow}>
 								<Sparkles size={15} /> Contrôle IA
-							</button>
+							</button>}
 						</div>
 					</div>
 					{prestatairesError && (
@@ -314,8 +316,22 @@ export default function FactureGlobalePage() {
 								setSelectedTransition("");
 								void getFactureTransitions(rowId)
 									.then((transitions) => {
-										setAvailableTransitions(transitions);
-										setSelectedTransition(transitions[0]?.type ?? "");
+										const actionPermissions: Partial<Record<TransitionFactureResponseDto["type"], string>> = {
+											ENVOI_VALIDATION: "envoi-validation",
+											RETOUR_PRESTATAIRE: "retour-prestataire",
+											VALIDATION: "validation",
+											RETOUR_POUR_CORRECTION: "retour-correction",
+											SORTIE: "sortie",
+											DEMANDE_SUPPRESSION: "deletions.manage",
+											REFUS_SUPPRESSION: "deletions.manage",
+											SUPPRESSION: "deletions.manage",
+										};
+										const permitted = transitions.filter((transition) => {
+											const permission = actionPermissions[transition.type];
+											return permission === undefined || hasPermission(permission);
+										});
+										setAvailableTransitions(permitted);
+										setSelectedTransition(permitted[0]?.type ?? "");
 									})
 									.catch((error: unknown) => setRowActionError(error instanceof Error ? error.message : "Impossible de charger les actions disponibles."));
 							}}
@@ -393,7 +409,7 @@ export default function FactureGlobalePage() {
 						)}
 					</div>
 				)}
-				{canEditRows && canActOnSelectedRow && openRowAction === "validate" && (
+				{canSendForValidation && canActOnSelectedRow && openRowAction === "validate" && (
 					<div className="fixed bottom-28 right-8 z-40 w-[340px] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl">
 						<button type="button" aria-label="Fermer" className="absolute right-3 top-3 rounded-full p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900" onClick={closeRowAction}><X size={18} /></button>
 						<h3 className="mb-3 pr-8 text-sm font-bold text-slate-900">Demande de validation</h3>

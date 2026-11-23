@@ -2,7 +2,7 @@ import { Pencil, Plus, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { Modal } from "../components/ui/Modal";
-import { SelectField, TextField } from "../components/ui/form";
+import { TextField } from "../components/ui/form";
 import { useAuth } from "../features/auth";
 import {
   createUser,

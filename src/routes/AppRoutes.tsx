@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useAuth } from "../features/auth";
 import Sidebar from "../components/layout/Sidebar";
 import LookupLayout from "../features/invoice/components/layout/LookupLayout";
 import AgentPage from "../pages/AgentPage";
@@ -28,6 +29,43 @@ function AppShell({ children }: { children: ReactNode }) {
   return <Sidebar>{children}</Sidebar>;
 }
 
+const accessibleRoutes = [
+  ["/agents", "agents.read"],
+  ["/beneficiaires", "beneficiaries.read"],
+  ["/prestataires", "providers.read"],
+  ["/pec", "attestations.read"],
+  ["/factures", "invoices.read"],
+  ["/factures/t6", "t6.read"],
+  ["/paie", "payroll.read"],
+  ["/statistiques", "reporting.read"],
+  ["/assistant", "assistant.use"],
+  ["/actes-prestations", "reference-data.read"],
+  ["/referentiels", "reference-data.read"],
+  ["/audit", "audit.read"],
+  ["/demandes-suppression", "deletions.manage"],
+] as const;
+
+function RequirePermission({
+  permission,
+  children,
+}: {
+  permission: string;
+  children: ReactNode;
+}) {
+  const { hasPermission } = useAuth();
+  if (hasPermission(permission)) return children;
+  const fallback = accessibleRoutes.find(([, required]) =>
+    hasPermission(required),
+  );
+  return fallback ? (
+    <Navigate to={fallback[0]} replace />
+  ) : (
+    <div className="p-8 text-center text-slate-600">
+      Aucun accès applicatif n’est attribué à votre compte.
+    </div>
+  );
+}
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -35,128 +73,158 @@ export default function AppRoutes() {
         path={ROUTES.home}
         element={<Navigate to={ROUTES.dashboard} replace />}
       />
-      <Route path={ROUTES.dashboard} element={<AppShell><DashboardPage /></AppShell>} />
+      <Route path={ROUTES.dashboard} element={<RequirePermission permission="reporting.read"><AppShell><DashboardPage /></AppShell></RequirePermission>} />
       <Route
         path={ROUTES.agents}
         element={
-          <AppShell>
-            <AgentPage />
-          </AppShell>
+          <RequirePermission permission="agents.read">
+            <AppShell>
+              <AgentPage />
+            </AppShell>
+          </RequirePermission>
         }
       />
       <Route
         path={ROUTES.beneficiaries}
         element={
-          <AppShell>
-            <BeneficiairePage />
-          </AppShell>
+          <RequirePermission permission="beneficiaries.read">
+            <AppShell>
+              <BeneficiairePage />
+            </AppShell>
+          </RequirePermission>
         }
       />
       <Route
         path={ROUTES.providers}
         element={
-          <AppShell>
-            <PrestatairePage />
-          </AppShell>
+          <RequirePermission permission="providers.read">
+            <AppShell>
+              <PrestatairePage />
+            </AppShell>
+          </RequirePermission>
         }
       />
       <Route
         path={ROUTES.coverage}
         element={
-          <AppShell>
-            <PriseEnChargePage />
-          </AppShell>
+          <RequirePermission permission="attestations.read">
+            <AppShell>
+              <PriseEnChargePage />
+            </AppShell>
+          </RequirePermission>
         }
       />
       <Route
         path={ROUTES.referentials}
         element={
-          <AppShell>
-            <ReferentielsPage />
-          </AppShell>
+          <RequirePermission permission="reference-data.read">
+            <AppShell>
+              <ReferentielsPage />
+            </AppShell>
+          </RequirePermission>
         }
       />
       <Route
         path={ROUTES.users}
         element={
-          <AppShell>
-            <UserManagementPage />
-          </AppShell>
+          <RequirePermission permission="admin.manage">
+            <AppShell>
+              <UserManagementPage />
+            </AppShell>
+          </RequirePermission>
         }
       />
       <Route
         path={ROUTES.roles}
         element={
-          <AppShell>
-            <RoleManagementPage />
-          </AppShell>
+          <RequirePermission permission="admin.manage">
+            <AppShell>
+              <RoleManagementPage />
+            </AppShell>
+          </RequirePermission>
         }
       />
       <Route
         path={ROUTES.audit}
         element={
-          <AppShell>
-            <AuditSessionsPage />
-          </AppShell>
+          <RequirePermission permission="audit.read">
+            <AppShell>
+              <AuditSessionsPage />
+            </AppShell>
+          </RequirePermission>
         }
       />
       <Route
         path={ROUTES.deletionRequests}
         element={
-          <AppShell>
-            <DeletionRequestsPage />
-          </AppShell>
+          <RequirePermission permission="deletions.manage">
+            <AppShell>
+              <DeletionRequestsPage />
+            </AppShell>
+          </RequirePermission>
         }
       />
       <Route
         path={ROUTES.invoice}
         element={
-          <AppShell>
-            <InvoicePage></InvoicePage>
-          </AppShell>
+          <RequirePermission permission="invoices.read">
+            <AppShell>
+              <InvoicePage></InvoicePage>
+            </AppShell>
+          </RequirePermission>
         }
       />
       <Route
         path={ROUTES.invoiceT6}
         element={
-          <AppShell>
-            <T6Page />
-          </AppShell>
+          <RequirePermission permission="t6.read">
+            <AppShell>
+              <T6Page />
+            </AppShell>
+          </RequirePermission>
         }
       />
-      <Route path={ROUTES.paie} element={<AppShell><PaiePage /></AppShell>} />
-      <Route path={ROUTES.statistics} element={<AppShell><StatisticsPage /></AppShell>} />
-      <Route path={ROUTES.assistant} element={<AppShell><AssistantGlobalPage /></AppShell>} />
+      <Route path={ROUTES.paie} element={<RequirePermission permission="payroll.read"><AppShell><PaiePage /></AppShell></RequirePermission>} />
+      <Route path={ROUTES.statistics} element={<RequirePermission permission="reporting.read"><AppShell><StatisticsPage /></AppShell></RequirePermission>} />
+      <Route path={ROUTES.assistant} element={<RequirePermission permission="assistant.use"><AppShell><AssistantGlobalPage /></AppShell></RequirePermission>} />
       <Route
         path={ROUTES.T5X}
         element={
-          <AppShell>
-            <T5XConfigurationPage />
-          </AppShell>
+          <RequirePermission permission="reference-data.read">
+            <AppShell>
+              <T5XConfigurationPage />
+            </AppShell>
+          </RequirePermission>
         }
       />
       <Route
         path={ROUTES.T5ParAn}
         element={
-          <LookupLayout onSearchIdp={fetchIdpLookupMock}>
-            <T5ParAnPage />
-          </LookupLayout>
+          <RequirePermission permission="follow-up.read">
+            <LookupLayout onSearchIdp={fetchIdpLookupMock}>
+              <T5ParAnPage />
+            </LookupLayout>
+          </RequirePermission>
         }
       />
       <Route
         path={ROUTES.T5ParAnParActe}
         element={
-          <LookupLayout onSearchIdp={fetchIdpLookupMock}>
-            <T5ParAnParActePage />
-          </LookupLayout>
+          <RequirePermission permission="follow-up.read">
+            <LookupLayout onSearchIdp={fetchIdpLookupMock}>
+              <T5ParAnParActePage />
+            </LookupLayout>
+          </RequirePermission>
         }
       />
       <Route
         path={ROUTES.T5Parseance}
         element={
-          <LookupLayout onSearchIdp={fetchIdpLookupMock}>
-            <T5ParSeancePage />
-          </LookupLayout>
+          <RequirePermission permission="follow-up.read">
+            <LookupLayout onSearchIdp={fetchIdpLookupMock}>
+              <T5ParSeancePage />
+            </LookupLayout>
+          </RequirePermission>
         }
       />
       <Route path="*" element={<Navigate to={ROUTES.agents} replace />} />

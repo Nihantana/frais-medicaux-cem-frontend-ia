@@ -25,6 +25,7 @@ import {
 import { createLieu, updateLieu } from "../services/lieu-api";
 import { errorMessage } from "../utils/errors";
 import { notify } from "../utils/notify";
+import { useAuth } from "../features/auth";
 
 type TabKey =
 	| "lieux"
@@ -167,6 +168,8 @@ function SimpleReferentialPanel({
 }
 
 export default function ReferentielsPage() {
+	const { hasPermission } = useAuth();
+	const canManageReferentials = hasPermission("referentials.manage");
 	const referentials = useReferentials();
 	const [tab, setTab] = useState<TabKey>("lieux");
 
@@ -424,6 +427,12 @@ export default function ReferentielsPage() {
 					</button>
 				}
 			/>
+
+			{!canManageReferentials && (
+				<div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+					Mode consultation : vous ne pouvez pas modifier les référentiels.
+				</div>
+			)}
 
 			<div className="mb-4 flex flex-wrap gap-2">
 				{TABS.map((entry) => (

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { MoreHorizontal, Search, X } from "lucide-react";
+import { Copy, MoreHorizontal, Search, X } from "lucide-react";
 import { factureGlobaleColumns } from "../../data/tableColumn";
 import DropDownCell from "./dropDownCell";
 import EditableDateCell from "./editableDateCell";
@@ -122,8 +122,22 @@ export default function FactureGlobaleTable({
     onDownloadAttachment,
     onOpenActions,
 }: FactureGlobaleTableProps) {
-    const { role } = useAuth();
-    const isRoleY = role === "CHEF";
+    const { hasPermission } = useAuth();
+    const isReadOnly = !hasPermission("invoices.write");
+    const canOpenActions =
+        hasPermission("invoices.write") ||
+        hasPermission("invoices.validate") ||
+        hasPermission("envoi-validation") ||
+        hasPermission("retour-prestataire") ||
+        hasPermission("validation") ||
+        hasPermission("retour-correction") ||
+        hasPermission("sortie") ||
+        hasPermission("modifier-informations") ||
+        hasPermission("modifier-montants") ||
+        hasPermission("suivi-creer") ||
+        hasPermission("suivi-modifier") ||
+        hasPermission("suivi-supprimer") ||
+        hasPermission("deletions.manage");
 
     const [openFilter, setOpenFilter] = useState<string | null>(null);
     const [pinnedFilter, setPinnedFilter] = useState<DateFilterKey | null>(null);
@@ -134,6 +148,17 @@ export default function FactureGlobaleTable({
         month: "",
         year: "",
     });
+    const [copiedRefSocialId, setCopiedRefSocialId] = useState<number | null>(null);
+
+    async function copyRefSocial(row: FactureGlobaleRow): Promise<void> {
+        const value = row.refSocial.trim();
+        if (!value) return;
+        await navigator.clipboard.writeText(value);
+        setCopiedRefSocialId(row.id);
+        window.setTimeout(() => {
+            setCopiedRefSocialId((current) => current === row.id ? null : current);
+        }, 1500);
+    }
 
     const dataRows = useMemo(
         () => rows.filter((row) => row.id !== addRowId),
@@ -157,9 +182,9 @@ export default function FactureGlobaleTable({
     const visibleRows = useMemo(
         () => [
             ...filteredRows,
-            ...(!isRoleY && isAddRowVisible && addRow ? [addRow] : [])
+            ...(!isReadOnly && isAddRowVisible && addRow ? [addRow] : [])
         ],
-        [filteredRows, addRow, isRoleY, isAddRowVisible]
+        [filteredRows, addRow, isReadOnly, isAddRowVisible]
     );
 
     function isTextFilterKey(key: string): key is TextFilterKey {
@@ -404,7 +429,7 @@ export default function FactureGlobaleTable({
                             ref={row.id === addRowId ? addRowRef : undefined}
                             tabIndex={row.id === addRowId ? -1 : undefined}
                             onClick={() => onRowSelect(row.id)}
-                            className={`group h-16 ${isRoleY ? "" : "cursor-pointer"} text-slate-800 transition-colors duration-150 ${
+                            className={`group h-16 ${isReadOnly ? "" : "cursor-pointer"} text-slate-800 transition-colors duration-150 ${
                                 rowIndex % 2 === 1 ? "bg-slate-50/35" : "bg-white"
                             } hover:bg-slate-50 ${
                                 row.id === addRowId
@@ -417,7 +442,7 @@ export default function FactureGlobaleTable({
                             }`}
                         >
 
-                            {isRoleY ? (
+                            {isReadOnly ? (
                                 factureGlobaleColumns.map((column) => {
                                     const cellClass = invoiceCellClass(column.key, column.width);
                                     if (column.key === "statut") return renderStatusCell(row, cellClass);
@@ -448,14 +473,40 @@ export default function FactureGlobaleTable({
                                     }
 
                                     const value = row[column.key];
+                                    if (column.key === "refSocial") {
+                                        return (
+                                            <td key={column.key} className={cellClass}>
+                                                {row.refSocial ? (
+                                                    <span className="inline-flex items-center gap-1.5">
+                                                        <span className="font-mono text-xs font-semibold">{row.refSocial}</span>
+                                                        <button
+                                                            type="button"
+                                                            className="btn-ghost p-1"
+                                                            title={copiedRefSocialId === row.id ? "Référence copiée" : "Copier la référence sociale"}
+                                                            aria-label={`Copier la référence sociale ${row.refSocial}`}
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                void copyRefSocial(row);
+                                                            }}
+                                                        >
+                                                            <Copy size={14} />
+                                                        </button>
+                                                        {copiedRefSocialId === row.id && (
+                                                            <span className="text-[11px] font-semibold text-emerald-700" role="status">Référence copiée</span>
+                                                        )}
+                                                    </span>
+                                                ) : null}
+                                            </td>
+                                        );
+                                    }
                                     return (
                                         <td key={column.key} className={cellClass}>
                                             {value instanceof Date
-                                                ? value.toLocaleDateString("fr-FR", {
-                                                    month: "short",
-                                                    year: "2-digit",
-                                                    timeZone: "UTC",
-                                                })
+                                                ? (() => {
+                                                    const iso = value instanceof Date ? value.toISOString().slice(0, 10) : "";
+                                                    const [year, month, day] = iso.split("-");
+                                                    return year && month && day ? `${day}/${month}/${year}` : "";
+                                                })()
                                                 : typeof value === "number"
                                                     ? amountFormatter.format(value)
                                                     : String(value ?? "")}
@@ -532,9 +583,35 @@ export default function FactureGlobaleTable({
                                         );
                                     }
 
+                                    if (column.key === "refSocial") {
+                                        return (
+                                            <td key={column.key} className={cellClass}>
+                                                {row.refSocial ? (
+                                                    <span className="inline-flex items-center gap-1.5">
+                                                        <span className="font-mono text-xs font-semibold">{row.refSocial}</span>
+                                                        <button
+                                                            type="button"
+                                                            className="btn-ghost p-1"
+                                                            title={copiedRefSocialId === row.id ? "Référence copiée" : "Copier la référence sociale"}
+                                                            aria-label={`Copier la référence sociale ${row.refSocial}`}
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                void copyRefSocial(row);
+                                                            }}
+                                                        >
+                                                            <Copy size={14} />
+                                                        </button>
+                                                        {copiedRefSocialId === row.id && (
+                                                            <span className="text-[11px] font-semibold text-emerald-700" role="status">Référence copiée</span>
+                                                        )}
+                                                    </span>
+                                                ) : null}
+                                            </td>
+                                        );
+                                    }
+
                                     if (
-                                        column.key === "refSocial"
-                                        || !editableUpdateKeys.has(column.key)
+                                        !editableUpdateKeys.has(column.key)
                                         || !updateKeys.has(column.key)
                                     ) {
                                         const isLocked = activeRowId !== null && activeRowId !== row.id;
@@ -547,11 +624,11 @@ export default function FactureGlobaleTable({
                                                     : undefined}
                                             >
                                                 {value instanceof Date
-                                                    ? value.toLocaleDateString("fr-FR", {
-                                                        month: "short",
-                                                        year: "2-digit",
-                                                        timeZone: "UTC",
-                                                    })
+                                                    ? (() => {
+                                                        const iso = value.toISOString().slice(0, 10);
+                                                        const [year, month, day] = iso.split("-");
+                                                        return `${day}/${month}/${year}`;
+                                                    })()
                                                     : typeof value === "number"
                                                         ? amountFormatter.format(value)
                                                         : String(value ?? "")}
@@ -676,6 +753,33 @@ export default function FactureGlobaleTable({
 
                                     const value = row[column.key];
 
+                                    if (column.key === "refSocial") {
+                                        return (
+                                            <td key={column.key} className={cellClass}>
+                                                {row.refSocial ? (
+                                                    <span className="inline-flex items-center gap-1.5">
+                                                        <span className="font-mono text-xs font-semibold">{row.refSocial}</span>
+                                                        <button
+                                                            type="button"
+                                                            className="btn-ghost p-1"
+                                                            title={copiedRefSocialId === row.id ? "Référence copiée" : "Copier la référence sociale"}
+                                                            aria-label={`Copier la référence sociale ${row.refSocial}`}
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                void copyRefSocial(row);
+                                                            }}
+                                                        >
+                                                            <Copy size={14} />
+                                                        </button>
+                                                        {copiedRefSocialId === row.id && (
+                                                            <span className="text-[11px] font-semibold text-emerald-700" role="status">Référence copiée</span>
+                                                        )}
+                                                    </span>
+                                                ) : null}
+                                            </td>
+                                        );
+                                    }
+
                                     if (!SaveColumnKey.includes(column.key as SaveColumnKey)) {
                                         return (
                                             <td
@@ -686,11 +790,11 @@ export default function FactureGlobaleTable({
                                                     : undefined}
                                             >
                                                 {value instanceof Date
-                                                    ? value.toLocaleDateString("fr-FR", {
-                                                        month: "short",
-                                                        year: "2-digit",
-                                                        timeZone: "UTC",
-                                                    })
+                                                    ? (() => {
+                                                        const iso = value.toISOString().slice(0, 10);
+                                                        const [year, month, day] = iso.split("-");
+                                                        return `${day}/${month}/${year}`;
+                                                    })()
                                                     : typeof value === "number"
                                                         ? amountFormatter.format(value)
                                                         : value}
@@ -742,7 +846,7 @@ export default function FactureGlobaleTable({
                                 })
                             )}
                             <td className="w-28 px-3 py-3 text-right">
-                                {row.id !== addRowId && (
+                                {row.id !== addRowId && canOpenActions && (
                                     <button
                                         type="button"
                                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"

@@ -43,6 +43,7 @@ import type {
 } from "../types/api";
 import { errorMessage, explainKnownBackendDefect } from "../utils/errors";
 import { notify } from "../utils/notify";
+import { useAuth } from "../features/auth";
 import {
 	formatDate,
 	calculateAge,
@@ -62,6 +63,9 @@ const FAMILLE_TONES: Record<string, "blue" | "green" | "amber"> = {
 };
 
 export default function BeneficiairePage() {
+	const { hasPermission } = useAuth();
+	const canWriteBeneficiaries = hasPermission("beneficiaries.write");
+	const canManageDeletions = hasPermission("deletions.manage");
 	const [rows, setRows] = useState<BeneficiaryRow[]>([]);
 	const [agents, setAgents] = useState<AgentItem[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -331,18 +335,20 @@ export default function BeneficiairePage() {
 						<button className="btn-secondary" onClick={() => void refresh()}>
 							<RefreshCw size={16} /> Actualiser
 						</button>
-						<button
-							className="btn-primary"
-							onClick={() => setCreateOpen(true)}
-							disabled={agents.length === 0}
-							title={
-								agents.length === 0
-									? "Chargez d'abord la liste des agents"
-									: undefined
-							}
-						>
-							<Plus size={16} /> Nouveau bénéficiaire
-						</button>
+						{canWriteBeneficiaries && (
+							<button
+								className="btn-primary"
+								onClick={() => setCreateOpen(true)}
+								disabled={agents.length === 0}
+								title={
+									agents.length === 0
+										? "Chargez d'abord la liste des agents"
+										: undefined
+								}
+							>
+								<Plus size={16} /> Nouveau bénéficiaire
+							</button>
+						)}
 					</>
 				}
 			/>
@@ -422,18 +428,20 @@ export default function BeneficiairePage() {
 						rows={rows}
 						columns={columns}
 						empty="Aucun bénéficiaire pour cette recherche."
-						onEdit={(row) => setEditTarget(row)}
-						rowActions={(row) => (
+						onEdit={canWriteBeneficiaries ? (row) => setEditTarget(row) : undefined}
+						rowActions={canWriteBeneficiaries || canManageDeletions ? (row) => (
 							<>
-								<button
-									className="btn-ghost"
-									title="Modifier l'observation"
-									aria-label={`Modifier l'observation de ${row.nom} ${row.prenom}`}
-									onClick={() => setObservationTarget(row)}
-								>
-									<MessageSquare size={15} />
-								</button>
-								{row.codeFamille !== "AGENT" && (
+								{canWriteBeneficiaries && (
+									<button
+										className="btn-ghost"
+										title="Modifier l'observation"
+										aria-label={`Modifier l'observation de ${row.nom} ${row.prenom}`}
+										onClick={() => setObservationTarget(row)}
+									>
+										<MessageSquare size={15} />
+									</button>
+								)}
+								{canManageDeletions && row.codeFamille !== "AGENT" && (
 									<button
 										className="btn-ghost text-red-600"
 										title="Demander la suppression"
@@ -444,7 +452,7 @@ export default function BeneficiairePage() {
 									</button>
 								)}
 							</>
-						)}
+						) : undefined}
 					/>
 				)}
 			</div>

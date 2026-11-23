@@ -31,6 +31,7 @@ import type {
 import { errorMessage } from "../utils/errors";
 import { validateImageFile } from "../utils/image";
 import { notify } from "../utils/notify";
+import { useAuth } from "../features/auth";
 import { formatDate, labelSexe, labelStatutPEC, orDash } from "../utils/format";
 
 /** The table needs a stable key: the matricule plays that role for agents. */
@@ -50,6 +51,9 @@ function nextMatriculeSuggestion(agentList: AgentItem[]): string | null {
 }
 
 export default function AgentPage() {
+	const { hasPermission } = useAuth();
+	const canWriteAgents = hasPermission("agents.write");
+	const canManageDeletions = hasPermission("deletions.manage");
 	const referentials = useReferentials();
 
 	const [agents, setAgents] = useState<AgentRow[]>([]);
@@ -445,12 +449,14 @@ export default function AgentPage() {
 						<button className="btn-secondary" onClick={() => void refresh()}>
 							<RefreshCw size={16} /> Actualiser
 						</button>
-						<button
-							className="btn-primary"
-							onClick={() => void openCreateForm()}
-						>
-							<Plus size={16} /> Nouvel agent
-						</button>
+						{canWriteAgents && (
+							<button
+								className="btn-primary"
+								onClick={() => void openCreateForm()}
+							>
+								<Plus size={16} /> Nouvel agent
+							</button>
+						)}
 					</>
 				}
 			/>
@@ -623,9 +629,9 @@ export default function AgentPage() {
 									? "Choisissez une direction pour afficher les agents."
 									: "Aucun agent pour ces critères."
 						}
-						onEdit={(row) => setEditTarget(row)}
-						onDelete={(row) => setDeleteTarget(row)}
-						rowActions={(row) => (
+						onEdit={canWriteAgents ? (row) => setEditTarget(row) : undefined}
+						onDelete={canManageDeletions ? (row) => setDeleteTarget(row) : undefined}
+						rowActions={canWriteAgents ? (row) => (
 							<button
 								className="btn-ghost"
 								title="Remplacer la carte professionnelle"
@@ -637,7 +643,7 @@ export default function AgentPage() {
 							>
 								<IdCard size={15} />
 							</button>
-						)}
+						) : undefined}
 					/>
 				)}
 			</div>

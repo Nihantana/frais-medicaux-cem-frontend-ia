@@ -16,8 +16,11 @@ import useT5XCategories from "../features/t5x/hooks/useT5XCategories";
 import useT5XPlafonds from "../features/t5x/hooks/useT5XPlafonds";
 import useScrollToT5XAddRow, { type T5XTableKey } from "../features/t5x/hooks/useScrollToT5XAddRow";
 import { hasCategoryConstraint } from "../features/t5x/utils/t5xConstraintRules";
+import { useAuth } from "../features/auth";
 
 export default function T5XConfigurationPage() {
+	const { hasPermission } = useAuth();
+	const canManageReferentials = hasPermission("referentials.manage");
 	const [activeTable, setActiveTable] = useState<"categories" | "actes">("categories");
 	const [isSaveConfirmationOpen, setIsSaveConfirmationOpen] = useState(false);
 	const [isConstraintResetOpen, setIsConstraintResetOpen] = useState(false);
@@ -251,7 +254,7 @@ export default function T5XConfigurationPage() {
 						/>
 					</>
 				)}
-				{!isLoading && (
+				{!isLoading && canManageReferentials && (
 					<div className="mx-4 mb-4 flex shrink-0 items-center justify-end gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
 						<DeleteRowButton
 							showLabel

@@ -5,6 +5,10 @@ export async function fetchMe(): Promise<User> {
   return apiService.get<User>("/auth/me");
 }
 
+export async function fetchMyPermissions(): Promise<string[]> {
+  return apiService.get<string[]>("/auth/me/permissions");
+}
+
 export async function updateProfile(nom: string): Promise<User> {
   return apiService.patch<User>("/auth/me", { nom });
 }
