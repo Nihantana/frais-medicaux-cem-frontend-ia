@@ -782,6 +782,17 @@ export default function T6Page() {
       render: (line) => line.categorieAgent ?? "—",
     },
     {
+      key: "agentType",
+      label: "Statut agent",
+      className: "min-w-[150px]",
+      render: (line) =>
+        line.agentType === "AGENT_RETRAITE"
+          ? "Retraité"
+          : line.agentType === "AGENT_ACTIF"
+            ? "Actif"
+            : "—",
+    },
+    {
       key: "dateActe",
       label: "Date de l’acte",
       className: "min-w-[120px]",
@@ -820,13 +831,13 @@ export default function T6Page() {
     },
     {
       key: "montantCem",
-      label: "80% CEM",
+      label: "Part CEM",
       className: "min-w-[135px] text-right",
       render: (line) => formatMoney(line.montantCem),
     },
     {
       key: "montantAgent",
-      label: "20% Agent",
+      label: "Part agent",
       className: "min-w-[135px] text-right",
       render: (line) => formatMoney(line.montantAgent),
     },

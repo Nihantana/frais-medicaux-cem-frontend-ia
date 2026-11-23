@@ -163,6 +163,7 @@ export interface Beneficiary {
 	observationIDP: string | null;
 	/** Always the agent's matricule, including for a spouse or a child. */
 	matricule: string;
+	agentType: "AGENT_ACTIF" | "AGENT_RETRAITE";
 	codeFamille: CodeFamille;
 	/** Set for a spouse/child only. */
 	carteSocialePath: string | null;

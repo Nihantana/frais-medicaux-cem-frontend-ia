@@ -2171,6 +2171,8 @@ export interface components {
             observationIDP: string | null;
             matricule: number;
             /** @enum {string} */
+            agentType: "AGENT_ACTIF" | "AGENT_RETRAITE";
+            /** @enum {string} */
             codeFamille: "AGENT" | "CONJOINT" | "ENFANT";
             carteSocialePath: string | null;
             carteProfessionnellePath: string | null;
@@ -2911,6 +2913,8 @@ export interface components {
             nomPrenomAgent: string | null;
             codeDirection: string | null;
             categorieAgent: string | null;
+            /** @enum {string} */
+            agentType: "AGENT_ACTIF" | "AGENT_RETRAITE" | null;
             acte: components["schemas"]["LigneActeResponseDto"];
             montantActe: string;
             montantDepassementActe: string;
