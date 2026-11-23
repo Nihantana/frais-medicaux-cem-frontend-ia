@@ -6,6 +6,10 @@ import {
   type QueryOf,
   type ResponseOf,
 } from "../../../services/api-contract";
+import type {
+  ConsommationT6Detail,
+  ConsommationT6Input,
+} from "../../consumption/services/consommations";
 
 const ROUTES = {
   list: "/factures",
@@ -66,7 +70,7 @@ export type CreateFactureLineBody = BodyOf<
   FacturePaths,
   typeof ROUTES.lines,
   "post"
->;
+> & { consommation?: ConsommationT6Input | null };
 export type CreateFactureLineResponse = ResponseOf<
   FacturePaths,
   typeof ROUTES.lines,
@@ -76,12 +80,16 @@ export type UpdateFactureLineBody = BodyOf<
   FacturePaths,
   typeof ROUTES.line,
   "put"
->;
+> & { consommation?: ConsommationT6Input | null };
 export type UpdateFactureLineResponse = ResponseOf<
   FacturePaths,
   typeof ROUTES.line,
   "put"
 >;
+export type FactureLineWithConsommation = Omit<
+  FactureLinesResponse["lignes"][number],
+  "consommation"
+> & { consommation?: ConsommationT6Detail | null };
 export type FactureAttachmentResponse = ResponseOf<
   FacturePaths,
   typeof ROUTES.attachments,

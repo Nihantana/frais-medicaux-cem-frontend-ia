@@ -43,22 +43,6 @@ function createEmptyParAnRow(
   };
 }
 
-function calculateCreatedParAnRow(
-  row: T5ParAnRow,
-  rows: T5ParAnRow[],
-  plafond: number | undefined,
-): Partial<T5ParAnRow> {
-  if (plafond === undefined || !Number.isFinite(plafond)) return {};
-  const montantCumule = rows
-    .filter((item) => item.id !== row.id && item.refSocial === row.refSocial)
-    .reduce((total, item) => total + item.montantActe, row.montantActe);
-  return {
-    montantCumule,
-    soldePlafond: Math.max(0, plafond - montantCumule),
-    montantDepassement: Math.max(0, montantCumule - plafond),
-  };
-}
-
 export default function T5ParAn() {
   const { id, label, refSocial } = useParams();
   const [searchParams] = useSearchParams();
@@ -97,12 +81,11 @@ export default function T5ParAn() {
   } = useT5RowsByRefSocial(
     lookupResult?.t5Data.parAn,
     refSocial,
+    lookupResult?.beneficiary.idp,
     createEmptyParAnRow,
-    "parAn",
     canEditRows,
     cible?.type === "acte" ? cible.label : "",
     cible?.type === "acte" ? cible.id : undefined,
-    (row, rows) => calculateCreatedParAnRow(row, rows, cible?.plafondParAn),
   );
   if (isCibleLoading)
     return <LoadingState message="Chargement des règles de plafond…" />;

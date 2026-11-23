@@ -1,13 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLookupRefresh } from "../context/LookupContext";
 import { getFactures } from "../services/serviceAPI";
-import {
-	createT5RowMock,
-	updateT5RowMock,
-	type T5Row,
-	type T5TableKind,
-	type T5Update,
-} from "../mocks/idpLookup";
+import type { components } from "../../../api/schema";
+import type { IdpLookupResult } from "../../../types/LookUp";
+import { creerLigneT5, modifierLigneT5 } from "../services/t5Lignes";
 
 type ReferencedRow = {
 	id: number;
@@ -20,11 +16,12 @@ type ReferencedRow = {
 
 type EditableKey = "dateActe" | "libelle" | "montantActe" | "acteId";
 type EditableValue = string | number | { libelle: string; acteId: number };
+type T5Row =
+	IdpLookupResult["t5Data"][keyof IdpLookupResult["t5Data"]][number];
+type T5Update = components["schemas"]["ModifierLigneSuiviDto"];
 
 function getChangedValues<T extends ReferencedRow>(original: T, current: T) {
-	const changes: T5Update = {
-		refSocial: current.refSocial,
-	};
+	const changes: T5Update = {};
 	if (original.dateActe !== current.dateActe) changes.dateActe = current.dateActe;
 	if (original.libelle !== current.libelle) changes.libelle = current.libelle;
 	if (original.montantActe !== current.montantActe) changes.montantActe = current.montantActe;
@@ -32,24 +29,28 @@ function getChangedValues<T extends ReferencedRow>(original: T, current: T) {
 	return changes;
 }
 
-function isValidForCreate(row: ReferencedRow): boolean {
+function isValidForCreate(row: ReferencedRow, idp: string | undefined): boolean {
 	return Boolean(
-		row.refSocial.trim()
+		idp?.trim()
+		&& row.refSocial.trim()
 		&& row.dateActe.trim()
 		&& row.libelle.trim()
-		&& Number.isFinite(row.montantActe),
+		&& row.acteId !== undefined
+		&& Number.isSafeInteger(row.acteId)
+		&& row.acteId > 0
+		&& Number.isFinite(row.montantActe)
+		&& row.montantActe > 0,
 	);
 }
 
 export default function useT5RowsByRefSocial<T extends T5Row>(
 	sourceRows: T[] | undefined,
 	refSocial: string | undefined,
+	idp: string | undefined,
 	createEmptyRow: (id: number, refSocial: string, libelle?: string, acteId?: number, nomEtablissement?: string) => T,
-	table: T5TableKind,
 	canEditRows = true,
 	newRowLibelle = "",
 	newRowActeId?: number,
-	getCreatedRowValues?: (row: T, rows: T[]) => Partial<T>,
 ) {
 	const refreshLookup = useLookupRefresh();
 	const [storedRows, setStoredRows] = useState<T[] | null>(null);
@@ -140,38 +141,46 @@ export default function useT5RowsByRefSocial<T extends T5Row>(
 		&& activeRow !== undefined
 		&& currentOriginalRow !== null
 		&& (currentActiveIsNew
-			? isValidForCreate(activeRow)
-			: Object.keys(getChangedValues(currentOriginalRow, activeRow)).length > 1);
+			? isValidForCreate(activeRow, idp)
+			: Object.keys(getChangedValues(currentOriginalRow, activeRow)).length > 0);
 
 	const saveActiveRow = useCallback(async () => {
 		if (!canEditRows) return false;
 		if (!activeRow || !currentOriginalRow || currentActiveRowId === null || !canSave || isSaving) return false;
 		setIsSaving(true);
 		setSaveError(null);
+		let annee: number | undefined;
 		try {
 			if (currentActiveIsNew) {
 				const { id, refSocial, acteId, dateActe, libelle, montantActe } = activeRow;
 				if (id !== currentActiveRowId) return false;
-				const calculatedValues = getCreatedRowValues?.(activeRow, rows) ?? {};
-				await createT5RowMock<T>(
-					table,
-					{ refSocial, acteId, dateActe, libelle, montantActe },
-					{ ...activeRow, ...calculatedValues },
-				);
+				if (!idp?.trim()) throw new Error("Aucun bénéficiaire sélectionné.");
+				if (acteId === undefined) throw new Error("Sélectionnez un acte.");
+				const created = await creerLigneT5({
+					idp: idp.trim(),
+					refSocial,
+					acteId,
+					dateActe,
+					libelle,
+					montantActe,
+				});
+				annee = created.annee;
 			} else {
 				const changes = getChangedValues(currentOriginalRow, activeRow);
-				await updateT5RowMock(
-					table,
-					currentActiveRowId,
-					changes,
+				await modifierLigneT5(currentActiveRowId, changes);
+				const yearFromDate = Number(
+					(changes.dateActe ?? currentOriginalRow.dateActe).slice(0, 4),
 				);
+				if (yearFromDate >= 1900 && yearFromDate <= 2200) {
+					annee = yearFromDate;
+				}
 			}
 
 			setActiveRowId(null);
 			setOriginalRow(null);
 			setActiveIsNew(false);
 			try {
-				await refreshLookup();
+				await refreshLookup(annee);
 				return true;
 			} catch (error) {
 				setSaveError(error instanceof Error
@@ -185,7 +194,7 @@ export default function useT5RowsByRefSocial<T extends T5Row>(
 		} finally {
 			setIsSaving(false);
 		}
-	}, [activeRow, canEditRows, canSave, currentActiveIsNew, currentActiveRowId, currentOriginalRow, getCreatedRowValues, isSaving, refreshLookup, rows, table]);
+	}, [activeRow, canEditRows, canSave, currentActiveIsNew, currentActiveRowId, currentOriginalRow, idp, isSaving, refreshLookup]);
 
 	const resetActiveRow = useCallback(() => {
 		if (!canEditRows) return;

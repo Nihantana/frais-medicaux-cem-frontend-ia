@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { IdpLookupResult } from "../../../types/LookUp";
 
-type SearchIdp = (idp: string) => Promise<IdpLookupResult>;
+type SearchIdp = (idp: string, annee?: number) => Promise<IdpLookupResult>;
 
 export default function useSearchIdp(searchIdp: SearchIdp) {
 	const [result, setResult] = useState<IdpLookupResult | null>(null);
@@ -34,13 +34,13 @@ export default function useSearchIdp(searchIdp: SearchIdp) {
 		}
 	}, [searchIdp]);
 
-	const refresh = useCallback(async () => {
+	const refresh = useCallback(async (annee?: number) => {
 		if (!idp) throw new Error("Aucun bénéficiaire sélectionné pour l’actualisation.");
 		const currentRequest = ++requestId.current;
 		setIsLoading(true);
 		setError(null);
 		try {
-			const response = await searchIdp(idp);
+			const response = await searchIdp(idp, annee);
 			if (currentRequest !== requestId.current) throw new Error("Actualisation remplacée par une recherche plus récente.");
 			setResult(response);
 			return response;

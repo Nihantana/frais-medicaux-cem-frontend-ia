@@ -76,8 +76,8 @@ export default function T5ParSeance() {
   } = useT5RowsByRefSocial(
     lookupResult?.t5Data.parSeance,
     refSocial,
+    lookupResult?.beneficiary.idp,
     createEmptyParSeanceRow,
-    "parSeance",
     canEditRows,
     cible?.type === "acte" ? cible.label : "",
     cible?.type === "acte" ? cible.id : undefined,

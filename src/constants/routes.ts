@@ -12,6 +12,7 @@ export const ROUTES = {
   deletionRequests: "/demandes-suppression",
   invoice: "/factures",
   invoiceT6: "/factures/t6",
+  consumptions: "/suivi-consommations",
   statistics: "/statistiques",
   paie: "/paie",
   assistant: "/assistant",

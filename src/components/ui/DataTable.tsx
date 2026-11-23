@@ -18,6 +18,7 @@ interface DataTableProps<T extends { id: string | number }> {
 	onToggleAll?: () => void;
 	onToggleRow?: (id: T["id"]) => void;
 	allSelected?: boolean;
+	selectionDisabled?: boolean;
 	empty?: string;
 	pageSize?: number;
 	/** Extra per-row actions rendered before the edit/delete buttons. */
@@ -40,6 +41,7 @@ export function DataTable<T extends { id: string | number }>({
 	onToggleAll,
 	onToggleRow,
 	allSelected,
+	selectionDisabled = false,
 	empty = "Aucun rÃƒÂ©sultat.",
 	pageSize = 10,
 	rowActions,
@@ -72,6 +74,7 @@ export function DataTable<T extends { id: string | number }>({
 										type="checkbox"
 										checked={Boolean(allSelected)}
 										onChange={onToggleAll}
+										disabled={selectionDisabled}
 										aria-label="Tout sÃƒÂ©lectionner"
 									/>
 								</th>
@@ -98,6 +101,7 @@ export function DataTable<T extends { id: string | number }>({
 											type="checkbox"
 											checked={selected.has(row.id)}
 											onChange={() => onToggleRow?.(row.id)}
+											disabled={selectionDisabled}
 											aria-label="SÃƒÂ©lectionner la ligne"
 										/>
 									</td>

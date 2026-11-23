@@ -2,19 +2,23 @@ import type { T5ParAnRow } from "../features/invoice/types/t5ParAn";
 import type { T5ParAnParActeRow } from "../features/invoice/types/t5ParAnParActe";
 import type { T5ParSeanceRow } from "../features/invoice/types/t5ParSeance";
 
-export type IdpLookupInfo = {
-	nom: string;
-	prenom: string;
+export type IdpLookupBeneficiaryInfo = {
+	idp: string;
+	nomPrenom: string;
 	codeFam: string;
 	observationIdp: string | null;
-	matricule: string;
-	backOfficeFrontOffice: string;
+};
+
+export type IdpLookupAgentInfo = {
+	nomPrenom: string | null;
+	matricule: string | null;
 	direction: string | null;
 	agenceService: string | null;
 };
 
 export type IdpLookupResult = {
-	agent: IdpLookupInfo;
+	beneficiary: IdpLookupBeneficiaryInfo;
+	agent: IdpLookupAgentInfo;
 	t5Data: {
 		parAn: T5ParAnRow[];
 		parAnParActe: T5ParAnParActeRow[];

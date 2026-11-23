@@ -83,8 +83,8 @@ export default function T5ParAnParActe() {
   } = useT5RowsByRefSocial(
     lookupResult?.t5Data.parAnParActe,
     refSocial,
+    lookupResult?.beneficiary.idp,
     createEmptyParAnParActeRow,
-    "parAnParActe",
     canEditRows,
     cible?.type === "acte" ? cible.label : "",
     cible?.type === "acte" ? cible.id : undefined,

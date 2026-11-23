@@ -1,25 +1,59 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useState, type FormEvent, type ReactNode } from "react";
 import { Menu, Search, X } from "lucide-react";
-import { useParams } from "react-router-dom";
-import type { IdpLookupResult } from "../../../../types/LookUp";
+import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import {
   LookupLoadingContext,
   LookupRefreshContext,
   LookupResultContext,
 } from "../../context/LookupContext";
 import useSearchIdp from "../../hooks/useSearchIdp";
+import { fetchIdpLookup } from "../../services/idpLookup";
 import logo from "../../../../assets/logo.jpg";
 
 type Props = {
   children: ReactNode;
-  onSearchIdp: (idp: string) => Promise<IdpLookupResult>;
 };
 
-export default function LookupLayout({ children, onSearchIdp }: Props) {
+export default function LookupLayout({ children }: Props) {
+  const location = useLocation();
+  const { id: targetId, refSocial } = useParams();
+  const [searchParams] = useSearchParams();
+  const targetType = searchParams.get("type") === "acte" ? "acte" : "categorie";
+
+  return (
+    <LookupLayoutContent
+      key={`${location.pathname}${location.search}`}
+      targetId={targetId}
+      targetType={targetType}
+      refSocial={refSocial}
+    >
+      {children}
+    </LookupLayoutContent>
+  );
+}
+
+function LookupLayoutContent({
+  children,
+  targetId,
+  targetType,
+  refSocial,
+}: {
+  children: ReactNode;
+  targetId?: string;
+  targetType: "acte" | "categorie";
+  refSocial?: string;
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [idp, setIdp] = useState("");
-  const lookup = useSearchIdp(onSearchIdp);
-  const { refSocial } = useParams();
+  const searchIdp = useCallback(
+    (beneficiaryIdp: string, annee?: number) =>
+      fetchIdpLookup(beneficiaryIdp, {
+        id: Number(targetId),
+        type: targetType,
+      }, annee),
+    [targetId, targetType],
+  );
+  const lookup = useSearchIdp(searchIdp);
 
   async function submitIdp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -68,37 +102,34 @@ export default function LookupLayout({ children, onSearchIdp }: Props) {
             loading={lookup.isLoading}
             error={lookup.error}
           >
-            <InfoField label="Nom" value={lookup.result?.agent.nom} />
-            <InfoField label="Prénom" value={lookup.result?.agent.prenom} />
+            <InfoField
+              label="Nom et prénom"
+              value={lookup.result?.beneficiary.nomPrenom}
+            />
             <InfoField
               label="Code famille"
-              value={lookup.result?.agent.codeFam}
+              value={lookup.result?.beneficiary.codeFam}
             />
             <InfoField
               label="Observation"
-              value={lookup.result?.agent.observationIdp}
+              value={lookup.result?.beneficiary.observationIdp}
             />
           </LookupSection>
 
           <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
             <h2 className="mb-3 text-xs font-extrabold uppercase tracking-wide text-slate-700">
-              Informations de l’agent
+              Informations de l’agent titulaire
             </h2>
             <div className="space-y-2">
               <InfoField
                 label="Matricule"
                 value={lookup.result?.agent.matricule}
               />
-              <InfoField label="Nom" value={lookup.result?.agent.nom} />
-              <InfoField label="Prénom" value={lookup.result?.agent.prenom} />
               <InfoField
-                label="Back-office / Front-office"
-                value={lookup.result?.agent.backOfficeFrontOffice}
+                label="Nom et prénom"
+                value={lookup.result?.agent.nomPrenom}
               />
-              <InfoField
-                label="Direction"
-                value={lookup.result?.agent.direction}
-              />
+              <InfoField label="Direction" value={lookup.result?.agent.direction} />
               <InfoField
                 label="Agence / Service"
                 value={lookup.result?.agent.agenceService}

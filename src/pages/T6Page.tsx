@@ -8,10 +8,14 @@ import {
 } from "react";
 import {
   AlertTriangle,
+  CircleCheck,
+  CircleX,
   Copy,
+  LoaderCircle,
   LockKeyhole,
   Plus,
   RefreshCw,
+  Trash2,
   X,
 } from "lucide-react";
 import { DataTable, type Column } from "../components/ui/DataTable";
@@ -31,16 +35,25 @@ import {
   updateFactureLine,
   type CreateFactureLineBody,
   type FactureControleTotauxResponse,
-  type FactureLinesResponse,
+  type FactureLineWithConsommation,
   type FactureListResponse,
   type UpdateFactureLineBody,
 } from "../features/invoice/services/serviceAPI";
+import {
+  rechercherMedicaments,
+  verifierBeneficiaireT6,
+  type ConsommationT6Input,
+  type MedicamentSuggestion,
+  type TypeConsommationT6,
+} from "../features/consumption/services/consommations";
+import { ApiError } from "../services/api";
 import type { components } from "../api/schema";
 import { formatDate } from "../utils/format";
+import { notify } from "../utils/notify";
 
 type Facture = FactureListResponse[number];
 type Acte = components["schemas"]["ActeResponseDto"];
-type Ligne = FactureLinesResponse["lignes"][number];
+type Ligne = FactureLineWithConsommation;
 type LigneAffichee = Ligne & { facture: Facture };
 type StatutRapprochement =
   "CONFORME" | "ECART" | "INCOMPLET" | "CALCUL" | "ERREUR";
@@ -63,6 +76,7 @@ type RapprochementItem = {
   facture: string | null;
   conformity?: boolean | null;
 };
+type IdpValidationStatus = "idle" | "checking" | "valid" | "invalid" | "error";
 
 type Draft = {
   libelle: string;
@@ -76,6 +90,22 @@ type Draft = {
   montantDepassementPlafond: string;
   observationDepassement: string;
   moisAffectation: string;
+  typeConsommation: "" | TypeConsommationT6;
+  medicamentNom: string;
+  medicamentSourceId: string;
+  medicamentSource: "" | "BDPM" | "RXNORM";
+  medicamentSubstanceActive: string;
+  quantiteMedicament: string;
+  posologieMedicament: string;
+  typeVerre: string;
+  monture: string;
+  sphereOD: string;
+  cylindreOD: string;
+  axeOD: string;
+  sphereOG: string;
+  cylindreOG: string;
+  axeOG: string;
+  descriptionConsommation: string;
 };
 
 const emptyDraft = (): Draft => ({
@@ -92,6 +122,22 @@ const emptyDraft = (): Draft => ({
   moisAffectation: new Date(new Date().setMonth(new Date().getMonth() + 1))
     .toISOString()
     .slice(0, 10),
+  typeConsommation: "",
+  medicamentNom: "",
+  medicamentSourceId: "",
+  medicamentSource: "",
+  medicamentSubstanceActive: "",
+  quantiteMedicament: "1",
+  posologieMedicament: "",
+  typeVerre: "",
+  monture: "",
+  sphereOD: "",
+  cylindreOD: "",
+  axeOD: "",
+  sphereOG: "",
+  cylindreOG: "",
+  axeOG: "",
+  descriptionConsommation: "",
 });
 
 const money = new Intl.NumberFormat("fr-FR", {
@@ -136,6 +182,9 @@ export default function T6Page() {
   const [actes, setActes] = useState<Acte[]>([]);
   const [selectedFactureId, setSelectedFactureId] = useState("");
   const [refSocialeQuery, setRefSocialeQuery] = useState("");
+  const [selectedLineIds, setSelectedLineIds] = useState<Set<number>>(
+    () => new Set(),
+  );
   const [editingFactureId, setEditingFactureId] = useState<number | null>(null);
   const [lines, setLines] = useState<LigneAffichee[]>([]);
   const [rapprochement, setRapprochement] = useState<Rapprochement | null>(
@@ -146,8 +195,16 @@ export default function T6Page() {
   const [clipboardError, setClipboardError] = useState<string | null>(null);
   const [copiedRefSociale, setCopiedRefSociale] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
+  const [medicamentSuggestions, setMedicamentSuggestions] = useState<
+    MedicamentSuggestion[]
+  >([]);
+  const [isSearchingMedicaments, setIsSearchingMedicaments] = useState(false);
+  const [medicamentSearchError, setMedicamentSearchError] = useState<
+    string | null
+  >(null);
   const [depassementActeManuel, setDepassementActeManuel] = useState(false);
-  const [depassementPlafondManuel, setDepassementPlafondManuel] = useState(false);
+  const [depassementPlafondManuel, setDepassementPlafondManuel] =
+    useState(false);
   const [editingLineId, setEditingLineId] = useState<number | null>(null);
   const [lineFormOpen, setLineFormOpen] = useState(false);
   const [clotureConfirmationOpen, setClotureConfirmationOpen] = useState(false);
@@ -155,7 +212,14 @@ export default function T6Page() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [idpValidationStatus, setIdpValidationStatus] =
+    useState<IdpValidationStatus>("idle");
+  const [idpValidationMessage, setIdpValidationMessage] = useState<
+    string | null
+  >(null);
+  const [verifiedIdp, setVerifiedIdp] = useState<string | null>(null);
   const lineRequestId = useRef(0);
+  const idpValidationRequestId = useRef(0);
   const rapprochementCloseTimer = useRef<number | null>(null);
   const [clotureMois, setClotureMois] = useState(
     new Date(new Date().setMonth(new Date().getMonth() + 1))
@@ -377,19 +441,118 @@ export default function T6Page() {
     },
     [],
   );
+  useEffect(() => {
+    const idp = draft.idp.trim();
+    if (!lineFormOpen || !idp) return;
+
+    const requestId = ++idpValidationRequestId.current;
+    const timer = window.setTimeout(async () => {
+      try {
+        const beneficiary = await verifierBeneficiaireT6(idp);
+        if (requestId !== idpValidationRequestId.current) return;
+        if (beneficiary.idp !== idp) {
+          setIdpValidationStatus("invalid");
+          setIdpValidationMessage(
+            "L’IDP retourné ne correspond pas à celui saisi.",
+          );
+          return;
+        }
+        setVerifiedIdp(idp);
+        setIdpValidationStatus("valid");
+        setIdpValidationMessage(
+          `Bénéficiaire trouvé : ${beneficiary.nomPrenomBeneficiaire}`,
+        );
+      } catch (caught: unknown) {
+        if (requestId !== idpValidationRequestId.current) return;
+        if (
+          caught instanceof ApiError &&
+          [400, 404].includes(caught.status ?? 0)
+        ) {
+          setIdpValidationStatus("invalid");
+          setIdpValidationMessage(
+            "Aucun bénéficiaire ne correspond à cet IDP.",
+          );
+          return;
+        }
+        setIdpValidationStatus("error");
+        setIdpValidationMessage(
+          caught instanceof Error
+            ? `Vérification impossible : ${caught.message}`
+            : "Vérification impossible. L’enregistrement est bloqué.",
+        );
+      }
+    }, 400);
+
+    return () => {
+      window.clearTimeout(timer);
+      if (idpValidationRequestId.current === requestId) {
+        idpValidationRequestId.current += 1;
+      }
+    };
+  }, [draft.idp, lineFormOpen]);
 
   function updateDraft<K extends keyof Draft>(key: K, value: Draft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
   }
+  async function searchMedicament() {
+    setIsSearchingMedicaments(true);
+    setMedicamentSearchError(null);
+    try {
+      const resultat = await rechercherMedicaments(draft.medicamentNom);
+      setMedicamentSuggestions(resultat.suggestions);
+      if (resultat.avertissement) {
+        setMedicamentSearchError(resultat.avertissement);
+      } else if (resultat.suggestions.length === 0) {
+        setMedicamentSearchError(
+          "Aucun médicament correspondant n’a été trouvé. Saisissez le nom figurant sur l’emballage; il sera ajouté au référentiel lors de l’enregistrement de la ligne T6.",
+        );
+      }
+    } catch (caught: unknown) {
+      setMedicamentSearchError(
+        caught instanceof Error
+          ? `${caught.message} Vous pouvez saisir le nom figurant sur l’emballage; il sera ajouté au référentiel lors de l’enregistrement de la ligne T6.`
+          : "La recherche externe est indisponible. Vous pouvez saisir le nom figurant sur l’emballage; il sera ajouté au référentiel lors de l’enregistrement de la ligne T6.",
+      );
+      setMedicamentSuggestions([]);
+    } finally {
+      setIsSearchingMedicaments(false);
+    }
+  }
+  function selectMedicament(suggestion: MedicamentSuggestion) {
+    setDraft((current) => ({
+      ...current,
+      libelle: suggestion.nom,
+      medicamentNom: suggestion.nom,
+      medicamentSourceId: suggestion.sourceId ?? "",
+      medicamentSource:
+        suggestion.source === "BDPM" || suggestion.source === "RXNORM"
+          ? suggestion.source
+          : "",
+      medicamentSubstanceActive: suggestion.substanceActive ?? "",
+      posologieMedicament: "",
+    }));
+    setMedicamentSuggestions([]);
+    setMedicamentSearchError(null);
+  }
   function openNewLine() {
+    idpValidationRequestId.current += 1;
+    setIdpValidationStatus("idle");
+    setIdpValidationMessage(null);
+    setVerifiedIdp(null);
     setEditingLineId(null);
     setEditingFactureId(null);
     setDraft(emptyDraft());
+    setMedicamentSuggestions([]);
+    setMedicamentSearchError(null);
     setDepassementActeManuel(false);
     setDepassementPlafondManuel(false);
     setLineFormOpen(true);
   }
   function startEditing(line: LigneAffichee) {
+    idpValidationRequestId.current += 1;
+    setIdpValidationStatus(line.idp.trim() ? "checking" : "idle");
+    setIdpValidationMessage(null);
+    setVerifiedIdp(null);
     setEditingLineId(line.id);
     setEditingFactureId(line.facture.id);
     setDepassementActeManuel(false);
@@ -408,13 +571,45 @@ export default function T6Page() {
       moisAffectation: line.moisAffectation
         ? line.moisAffectation.slice(0, 7)
         : emptyDraft().moisAffectation.slice(0, 7),
+      typeConsommation: line.consommation?.type ?? "",
+      medicamentNom: line.consommation?.medicament?.nom ?? "",
+      medicamentSourceId:
+        line.consommation?.medicament?.sourceId ??
+        line.consommation?.medicament?.rxcui ??
+        "",
+      medicamentSource:
+        line.consommation?.medicament?.source === "BDPM" ||
+        line.consommation?.medicament?.source === "RXNORM"
+          ? line.consommation.medicament.source
+          : "",
+      medicamentSubstanceActive:
+        line.consommation?.medicament?.substanceActive ?? "",
+      quantiteMedicament: line.consommation?.quantite ?? "1",
+      posologieMedicament: line.consommation?.posologie ?? "",
+      typeVerre: line.consommation?.lunettes?.typeVerre ?? "",
+      monture: line.consommation?.lunettes?.monture ?? "",
+      sphereOD: line.consommation?.lunettes?.sphereOD ?? "",
+      cylindreOD: line.consommation?.lunettes?.cylindreOD ?? "",
+      axeOD: line.consommation?.lunettes?.axeOD?.toString() ?? "",
+      sphereOG: line.consommation?.lunettes?.sphereOG ?? "",
+      cylindreOG: line.consommation?.lunettes?.cylindreOG ?? "",
+      axeOG: line.consommation?.lunettes?.axeOG?.toString() ?? "",
+      descriptionConsommation: line.consommation?.description ?? "",
     });
+    setMedicamentSuggestions([]);
+    setMedicamentSearchError(null);
     setLineFormOpen(true);
   }
   function cancelEditing() {
+    idpValidationRequestId.current += 1;
+    setIdpValidationStatus("idle");
+    setIdpValidationMessage(null);
+    setVerifiedIdp(null);
     setEditingLineId(null);
     setEditingFactureId(null);
     setDraft(emptyDraft());
+    setMedicamentSuggestions([]);
+    setMedicamentSearchError(null);
     setDepassementActeManuel(false);
     setDepassementPlafondManuel(false);
     setLineFormOpen(false);
@@ -452,6 +647,7 @@ export default function T6Page() {
     startRapprochementClose();
     setSelectedFactureId("");
     setRefSocialeQuery("");
+    setSelectedLineIds(new Set());
     setRapprochement(null);
     cancelEditing();
   }
@@ -459,6 +655,7 @@ export default function T6Page() {
     stopRapprochementClose();
     setRefSocialeQuery(facture.refSociale);
     setSelectedFactureId(String(facture.id));
+    setSelectedLineIds(new Set());
     setRapprochement(null);
     setError(null);
     cancelEditing();
@@ -471,6 +668,7 @@ export default function T6Page() {
     );
     const nextId = exactMatch ? String(exactMatch.id) : "";
     if (nextId !== selectedFactureId) {
+      setSelectedLineIds(new Set());
       if (nextId) stopRapprochementClose();
       else startRapprochementClose();
       setSelectedFactureId(nextId);
@@ -514,12 +712,74 @@ export default function T6Page() {
   }
 
   function buildLineBody(): CreateFactureLineBody | UpdateFactureLineBody {
-    const moisAffectationMatch = /^([0-9]{4}-[0-9]{2})(?:-[0-9]{2})?/.exec(draft.moisAffectation);
+    const moisAffectationMatch = /^([0-9]{4}-[0-9]{2})(?:-[0-9]{2})?/.exec(
+      draft.moisAffectation,
+    );
     const moisAffectation = moisAffectationMatch
       ? `${moisAffectationMatch[1]}-01`
       : `${draft.moisAffectation.slice(0, 7)}-01`;
+    const nombreOptionnel = (valeur: string): number | undefined =>
+      valeur.trim() === "" ? undefined : Number(valeur);
+    let consommation: ConsommationT6Input | null = null;
+    if (draft.typeConsommation === "MEDICAMENT") {
+      consommation = {
+        type: "MEDICAMENT",
+        quantite: Number(draft.quantiteMedicament),
+        ...(draft.posologieMedicament.trim()
+          ? { posologie: draft.posologieMedicament.trim() }
+          : {}),
+        medicament: {
+          nom: draft.medicamentNom.trim(),
+          ...(draft.medicamentSourceId
+            ? {
+                sourceId: draft.medicamentSourceId,
+                source: draft.medicamentSource || "BDPM",
+              }
+            : {}),
+          ...(draft.medicamentSubstanceActive.trim()
+            ? { substanceActive: draft.medicamentSubstanceActive.trim() }
+            : {}),
+        },
+      };
+    } else if (draft.typeConsommation === "LUNETTES") {
+      consommation = {
+        type: "LUNETTES",
+        lunettes: {
+          ...(draft.typeVerre.trim()
+            ? { typeVerre: draft.typeVerre.trim() }
+            : {}),
+          ...(draft.monture.trim() ? { monture: draft.monture.trim() } : {}),
+          ...(nombreOptionnel(draft.sphereOD) !== undefined
+            ? { sphereOD: nombreOptionnel(draft.sphereOD) }
+            : {}),
+          ...(nombreOptionnel(draft.cylindreOD) !== undefined
+            ? { cylindreOD: nombreOptionnel(draft.cylindreOD) }
+            : {}),
+          ...(nombreOptionnel(draft.axeOD) !== undefined
+            ? { axeOD: nombreOptionnel(draft.axeOD) }
+            : {}),
+          ...(nombreOptionnel(draft.sphereOG) !== undefined
+            ? { sphereOG: nombreOptionnel(draft.sphereOG) }
+            : {}),
+          ...(nombreOptionnel(draft.cylindreOG) !== undefined
+            ? { cylindreOG: nombreOptionnel(draft.cylindreOG) }
+            : {}),
+          ...(nombreOptionnel(draft.axeOG) !== undefined
+            ? { axeOG: nombreOptionnel(draft.axeOG) }
+            : {}),
+        },
+      };
+    } else if (draft.typeConsommation === "AUTRE") {
+      consommation = {
+        type: "AUTRE",
+        description: draft.descriptionConsommation.trim(),
+      };
+    }
     return {
-      libelle: draft.libelle.trim(),
+      libelle:
+        draft.typeConsommation === "MEDICAMENT"
+          ? draft.medicamentNom.trim()
+          : draft.libelle.trim(),
       dateActe: draft.dateActe,
       idp: draft.idp.trim(),
       acteId: Number(draft.acteId || acteFromLibelle?.id),
@@ -528,7 +788,11 @@ export default function T6Page() {
         ? { montantDepassementActe: Number(draft.montantDepassementActe || 0) }
         : {}),
       ...(depassementPlafondManuel
-        ? { montantDepassementPlafond: Number(draft.montantDepassementPlafond || 0) }
+        ? {
+            montantDepassementPlafond: Number(
+              draft.montantDepassementPlafond || 0,
+            ),
+          }
         : {}),
       ...(draft.numPec ? { numPec: Number(draft.numPec) } : {}),
       refPaie: draft.refPaie.trim() || null,
@@ -536,6 +800,7 @@ export default function T6Page() {
       ...(draft.observationDepassement.trim()
         ? { observationDepassement: draft.observationDepassement.trim() }
         : {}),
+      consommation,
     } as CreateFactureLineBody;
   }
   function openClotureConfirmation() {
@@ -577,13 +842,37 @@ export default function T6Page() {
   }
   function validateDraft(): string | null {
     if (!activeFactureId) return "Sélectionnez une facture globale.";
+    const libelleValide =
+      draft.typeConsommation === "MEDICAMENT"
+        ? draft.medicamentNom.trim()
+        : draft.libelle.trim();
     if (
-      !draft.libelle.trim() ||
+      !libelleValide ||
       !draft.idp.trim() ||
       !draft.dateActe ||
       (!draft.acteId && !acteFromLibelle)
     )
       return "Le bénéficiaire, la date et l’acte sont obligatoires. Le libellé doit correspondre à un acte existant.";
+    if (idpValidationStatus !== "valid" || verifiedIdp !== draft.idp.trim())
+      return "Vérifiez qu’un bénéficiaire existe pour cet IDP avant l’enregistrement.";
+    if (
+      draft.typeConsommation === "MEDICAMENT" &&
+      (!Number.isFinite(Number(draft.quantiteMedicament)) ||
+        Number(draft.quantiteMedicament) <= 0)
+    )
+      return "Saisissez une quantité de médicament supérieure à zéro.";
+    if (
+      draft.typeConsommation === "LUNETTES" &&
+      !draft.typeVerre.trim() &&
+      !draft.sphereOD.trim() &&
+      !draft.sphereOG.trim()
+    )
+      return "Saisissez le type de verre ou une correction pour les lunettes.";
+    if (
+      draft.typeConsommation === "AUTRE" &&
+      !draft.descriptionConsommation.trim()
+    )
+      return "Saisissez la description de la consommation.";
     if (
       !Number.isFinite(Number(draft.montantActe)) ||
       Number(draft.montantActe) < 0
@@ -629,6 +918,12 @@ export default function T6Page() {
     if (!window.confirm("Supprimer cette ligne de facture ?")) return;
     try {
       await deleteFactureLine(line.facture.id, line.id);
+      setSelectedLineIds((current) => {
+        const next = new Set(current);
+        next.delete(line.id);
+        return next;
+      });
+      notify("Ligne T6 supprimée avec succès.");
       if (editingLineId === line.id) cancelEditing();
       await loadLines();
       await loadFacturesAndActes();
@@ -638,6 +933,99 @@ export default function T6Page() {
           ? caught.message
           : "La ligne n’a pas pu être supprimée.",
       );
+    }
+  }
+  function toggleLineSelection(lineId: number) {
+    setSelectedLineIds((current) => {
+      const next = new Set(current);
+      if (next.has(lineId)) next.delete(lineId);
+      else next.add(lineId);
+      return next;
+    });
+  }
+  function toggleAllLineSelections() {
+    if (!selectedFacture) return;
+    const factureLineIds = lines
+      .filter((line) => line.facture.id === selectedFacture.id)
+      .map((line) => line.id);
+    const shouldSelectAll = !factureLineIds.every((id) =>
+      selectedLineIds.has(id),
+    );
+    setSelectedLineIds((current) => {
+      const next = new Set(current);
+      for (const id of factureLineIds) {
+        if (shouldSelectAll) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  }
+  async function removeSelectedLines() {
+    if (
+      !selectedFacture ||
+      !canWriteT6 ||
+      selectedFacture.dateCloture ||
+      selectedLineIds.size === 0
+    ) {
+      return;
+    }
+
+    const lignesSelectionnees = lines.filter(
+      (line) =>
+        line.facture.id === selectedFacture.id &&
+        selectedLineIds.has(line.id),
+    );
+    if (lignesSelectionnees.length === 0) {
+      setSelectedLineIds(new Set());
+      return;
+    }
+    if (
+      !window.confirm(
+        `Supprimer ${lignesSelectionnees.length} ligne(s) de la référence sociale ${selectedFacture.refSociale} ? Cette action est définitive.`,
+      )
+    ) {
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+    const idsSupprimes = new Set<number>();
+    const idsEnEchec = new Set<number>();
+    const erreurs: string[] = [];
+    try {
+      for (const ligne of lignesSelectionnees) {
+        try {
+          await deleteFactureLine(ligne.facture.id, ligne.id);
+          idsSupprimes.add(ligne.id);
+        } catch (caught: unknown) {
+          idsEnEchec.add(ligne.id);
+          erreurs.push(
+            caught instanceof Error
+              ? caught.message
+              : `La ligne ${ligne.id} n’a pas pu être supprimée.`,
+          );
+        }
+      }
+
+      setSelectedLineIds(idsEnEchec);
+      if (editingLineId !== null && idsSupprimes.has(editingLineId)) {
+        cancelEditing();
+      }
+      if (idsSupprimes.size > 0) {
+        notify(
+          `${idsSupprimes.size} ligne(s) T6 supprimée(s) avec succès.`,
+        );
+        await loadLines(selectedFacture.id);
+        await loadFacturesAndActes();
+      }
+      if (erreurs.length > 0) {
+        notify(
+          `${erreurs.length} ligne(s) n’ont pas pu être supprimée(s). ${erreurs[0]}`,
+          "error",
+        );
+      }
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -652,6 +1040,18 @@ export default function T6Page() {
     editingFactureId ?? (selectedFactureId ? Number(selectedFactureId) : null);
   const canEditDisplayedLines =
     canWriteT6 && selectedFacture?.dateCloture == null;
+  const canMutateDisplayedLines = canEditDisplayedLines && !isSaving;
+  const canSelectDisplayedLines =
+    canEditDisplayedLines &&
+    Boolean(refSocialeQuery.trim()) &&
+    lines.length > 0;
+  const allDisplayedLinesSelected =
+    lines.length > 0 &&
+    lines.every(
+      (line) =>
+        line.facture.id === selectedFacture?.id &&
+        selectedLineIds.has(line.id),
+    );
   const columns: Column<LigneAffichee>[] = [
     {
       key: "moisAffectation",
@@ -773,7 +1173,16 @@ export default function T6Page() {
       label: "Acte / prestation",
       className: "min-w-[220px] max-w-[280px]",
       wrap: true,
-      render: (line) => line.libelle,
+      render: (line) => (
+        <div>
+          <div>{line.libelle}</div>
+          {line.consommation?.posologie && (
+            <div className="mt-1 text-xs text-slate-500">
+              Posologie : {line.consommation.posologie}
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       key: "categorieAgent",
@@ -1024,17 +1433,19 @@ export default function T6Page() {
                     Statut facture : {selectedFacture.statut}
                   </div>
                 </div>
-                {canClosePayroll && <button
-                  type="button"
-                  className="btn-primary w-full justify-center"
-                  onClick={openClotureConfirmation}
-                  disabled={fieldsDisabled}
-                >
-                  <LockKeyhole size={16} />{" "}
-                  {selectedFacture.dateCloture
-                    ? "Facture clôturée"
-                    : "Clôturer définitivement"}
-                </button>}
+                {canClosePayroll && (
+                  <button
+                    type="button"
+                    className="btn-primary w-full justify-center"
+                    onClick={openClotureConfirmation}
+                    disabled={fieldsDisabled}
+                  >
+                    <LockKeyhole size={16} />{" "}
+                    {selectedFacture.dateCloture
+                      ? "Facture clôturée"
+                      : "Clôturer définitivement"}
+                  </button>
+                )}
               </div>
             ) : null}
           </section>
@@ -1096,8 +1507,9 @@ export default function T6Page() {
                   )}
                   {statutRapprochementAffiche === "INCOMPLET" && (
                     <p className="px-5 py-4 text-sm text-amber-800">
-                      La comparaison est incomplète : vérifiez les lignes de frais et
-                      la présence des montants de facture, dont la part agent.
+                      La comparaison est incomplète : vérifiez les lignes de
+                      frais et la présence des montants de facture, dont la part
+                      agent.
                     </p>
                   )}
                   {rapprochementItems.length > 0 && (
@@ -1125,7 +1537,9 @@ export default function T6Page() {
                             </h3>
                             <div className="mt-3 grid grid-cols-2 gap-3">
                               <div>
-                                <p className="text-xs text-slate-500">Frais saisis</p>
+                                <p className="text-xs text-slate-500">
+                                  Frais saisis
+                                </p>
                                 <p className="mt-1 font-semibold text-slate-900">
                                   {formatMoney(item.t6)}
                                 </p>
@@ -1175,19 +1589,33 @@ export default function T6Page() {
                 Détail des frais
               </h2>
               <div className="flex gap-2">
-                {canWriteT6 && <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={openNewLine}
-                  disabled={fieldsDisabled}
-                >
-                  <Plus size={17} /> Ajouter une ligne
-                </button>}
+                {canSelectDisplayedLines && (
+                  <button
+                    type="button"
+                    className="btn-secondary text-red-700"
+                    onClick={() => void removeSelectedLines()}
+                    disabled={isSaving || selectedLineIds.size === 0}
+                  >
+                    <Trash2 size={16} />
+                    Supprimer la sélection ({selectedLineIds.size})
+                  </button>
+                )}
+                {canWriteT6 && (
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={openNewLine}
+                    disabled={fieldsDisabled}
+                  >
+                    <Plus size={17} /> Ajouter une ligne
+                  </button>
+                )}
                 <button
                   type="button"
                   className="btn-secondary"
                   title="Actualiser"
                   onClick={() => void loadLines()}
+                  disabled={isSaving}
                 >
                   <RefreshCw size={17} /> Actualiser
                 </button>
@@ -1201,12 +1629,21 @@ export default function T6Page() {
                   ? "Aucune ligne pour cette facture."
                   : "Aucune ligne pour les factures non clôturées."
               }
-              onEdit={canEditDisplayedLines ? startEditing : undefined}
+              onEdit={canMutateDisplayedLines ? startEditing : undefined}
               onDelete={
-                canEditDisplayedLines
+                canMutateDisplayedLines
                   ? (line) => void removeLine(line)
                   : undefined
               }
+              selected={canSelectDisplayedLines ? selectedLineIds : undefined}
+              onToggleRow={
+                canSelectDisplayedLines ? toggleLineSelection : undefined
+              }
+              onToggleAll={
+                canSelectDisplayedLines ? toggleAllLineSelections : undefined
+              }
+              allSelected={allDisplayedLinesSelected}
+              selectionDisabled={isSaving}
               pageSize={10}
             />
             {lines.length > 0 && (
@@ -1311,12 +1748,82 @@ export default function T6Page() {
               <div className="grid gap-3 md:grid-cols-2">
                 <label className="label">
                   Identifiant du bénéficiaire
-                  <input
-                    className="field mt-1"
-                    value={draft.idp}
-                    onChange={(event) => updateDraft("idp", event.target.value)}
-                    disabled={formFieldsDisabled}
-                  />
+                  <span className="relative mt-1 block">
+                    <input
+                      className={`field pr-10 ${
+                        idpValidationStatus === "valid"
+                          ? "border-emerald-500"
+                          : idpValidationStatus === "invalid" ||
+                              idpValidationStatus === "error"
+                            ? "border-red-500"
+                            : ""
+                      }`}
+                      value={draft.idp}
+                      onChange={(event) => {
+                        idpValidationRequestId.current += 1;
+                        setVerifiedIdp(null);
+                        setIdpValidationMessage(null);
+                        setIdpValidationStatus(
+                          event.target.value.trim() ? "checking" : "idle",
+                        );
+                        updateDraft("idp", event.target.value);
+                      }}
+                      disabled={formFieldsDisabled}
+                      aria-invalid={
+                        idpValidationStatus === "invalid" ||
+                        idpValidationStatus === "error"
+                      }
+                      aria-describedby="t6-idp-validation-message"
+                    />
+                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                      {idpValidationStatus === "checking" && (
+                        <LoaderCircle
+                          size={18}
+                          className="animate-spin text-slate-400"
+                          aria-hidden="true"
+                        />
+                      )}
+                      {idpValidationStatus === "valid" && (
+                        <CircleCheck
+                          size={18}
+                          className="text-emerald-600"
+                          aria-hidden="true"
+                        />
+                      )}
+                      {(idpValidationStatus === "invalid" ||
+                        idpValidationStatus === "error") && (
+                        <CircleX
+                          size={18}
+                          className="text-red-600"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </span>
+                  </span>
+                  {idpValidationStatus !== "idle" && idpValidationMessage && (
+                    <span
+                      id="t6-idp-validation-message"
+                      className={`mt-1 block text-xs ${
+                        idpValidationStatus === "valid"
+                          ? "text-emerald-700"
+                          : idpValidationStatus === "checking"
+                            ? "text-slate-500"
+                            : "text-red-700"
+                      }`}
+                      role="status"
+                    >
+                      {idpValidationMessage}
+                    </span>
+                  )}
+                  {idpValidationStatus === "checking" && (
+                    <span
+                      id="t6-idp-validation-message"
+                      className="mt-1 block text-xs text-slate-500"
+                      role="status"
+                    >
+                      Vérification de l’IDP…
+                    </span>
+                  )}
                 </label>
                 <label className="label">
                   Date acte
@@ -1353,6 +1860,272 @@ export default function T6Page() {
                     ))}
                   </select>
                 </label>
+                <label className="label">
+                  Suivi complémentaire
+                  <select
+                    className="field mt-1"
+                    value={draft.typeConsommation}
+                    onChange={(event) =>
+                      updateDraft(
+                        "typeConsommation",
+                        event.target.value as Draft["typeConsommation"],
+                      )
+                    }
+                    disabled={formFieldsDisabled}
+                  >
+                    <option value="">Aucun</option>
+                    <option value="MEDICAMENT">Médicament</option>
+                    <option value="LUNETTES">Lunettes</option>
+                    <option value="AUTRE">Autre</option>
+                  </select>
+                </label>
+                {draft.typeConsommation === "MEDICAMENT" && (
+                  <>
+                    <div className="label md:col-span-2">
+                      Médicament
+                      <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+                        <input
+                          className="field"
+                          value={draft.medicamentNom}
+                          onChange={(event) => {
+                            const nom = event.target.value;
+                            setDraft((current) => ({
+                              ...current,
+                              medicamentNom: nom,
+                              medicamentSourceId: "",
+                              medicamentSource: "",
+                              medicamentSubstanceActive: "",
+                              posologieMedicament: "",
+                              libelle: nom,
+                            }));
+                            setMedicamentSuggestions([]);
+                            setMedicamentSearchError(null);
+                          }}
+                          disabled={formFieldsDisabled}
+                          placeholder="Rechercher par nom ou substance active"
+                        />
+                        <button
+                          type="button"
+                          className="btn-secondary shrink-0"
+                          onClick={() => void searchMedicament()}
+                          disabled={
+                            formFieldsDisabled ||
+                            isSearchingMedicaments ||
+                            draft.medicamentNom.trim().length < 2
+                          }
+                        >
+                          {isSearchingMedicaments ? "Recherche…" : "Rechercher"}
+                        </button>
+                      </div>
+                      {draft.medicamentSource === "BDPM" &&
+                      draft.medicamentSourceId ? (
+                        <p className="mt-1 text-xs text-emerald-700">
+                          Référence BDPM sélectionnée (CIS{" "}
+                          {draft.medicamentSourceId})
+                        </p>
+                      ) : draft.medicamentSource === "RXNORM" &&
+                        draft.medicamentSourceId ? (
+                        <p className="mt-1 text-xs text-emerald-700">
+                          Ancienne référence RxNorm conservée
+                        </p>
+                      ) : draft.medicamentNom ? (
+                        <p className="mt-1 text-xs text-amber-700">
+                          Produit saisi manuellement — il sera enregistré dans
+                          le référentiel local avec le statut « à vérifier ».
+                        </p>
+                      ) : null}
+                      {medicamentSearchError && (
+                        <p
+                          className="mt-1 text-xs text-amber-700"
+                          role="status"
+                        >
+                          {medicamentSearchError}
+                        </p>
+                      )}
+                      {medicamentSuggestions.length > 0 && (
+                        <ul className="mt-2 max-h-48 overflow-auto rounded-lg border border-slate-200 bg-white">
+                          {medicamentSuggestions.map((suggestion) => (
+                            <li
+                              key={`${suggestion.source}:${suggestion.sourceId ?? suggestion.nom}`}
+                            >
+                              <button
+                                type="button"
+                                className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50"
+                                onClick={() => selectMedicament(suggestion)}
+                              >
+                                <span className="block">{suggestion.nom}</span>
+                                <span className="block text-xs text-slate-500">
+                                  {suggestion.source === "BDPM" &&
+                                  suggestion.sourceId
+                                    ? `BDPM · CIS ${suggestion.sourceId}`
+                                    : "Déjà enregistré localement"}
+                                  {suggestion.substanceActive
+                                    ? ` · ${suggestion.substanceActive}`
+                                    : ""}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    <label className="label">
+                      Quantité
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        className="field mt-1"
+                        value={draft.quantiteMedicament}
+                        onChange={(event) =>
+                          updateDraft("quantiteMedicament", event.target.value)
+                        }
+                        disabled={formFieldsDisabled}
+                      />
+                    </label>
+                    <label className="label md:col-span-2">
+                      Posologie
+                      <textarea
+                        className="field mt-1"
+                        rows={2}
+                        maxLength={1000}
+                        value={draft.posologieMedicament}
+                        onChange={(event) =>
+                          updateDraft("posologieMedicament", event.target.value)
+                        }
+                        disabled={formFieldsDisabled}
+                        placeholder="Ex. 1 comprimé matin et soir pendant 5 jours"
+                      />
+                    </label>
+                  </>
+                )}
+                {draft.typeConsommation === "LUNETTES" && (
+                  <>
+                    <label className="label">
+                      Type de verre
+                      <input
+                        className="field mt-1"
+                        value={draft.typeVerre}
+                        onChange={(event) =>
+                          updateDraft("typeVerre", event.target.value)
+                        }
+                        disabled={formFieldsDisabled}
+                      />
+                    </label>
+                    <label className="label">
+                      Monture
+                      <input
+                        className="field mt-1"
+                        value={draft.monture}
+                        onChange={(event) =>
+                          updateDraft("monture", event.target.value)
+                        }
+                        disabled={formFieldsDisabled}
+                      />
+                    </label>
+                    <p className="label md:col-span-2">Œil droit (OD)</p>
+                    <label className="label">
+                      Sphère OD
+                      <input
+                        type="number"
+                        step="0.25"
+                        className="field mt-1"
+                        value={draft.sphereOD}
+                        onChange={(event) =>
+                          updateDraft("sphereOD", event.target.value)
+                        }
+                        disabled={formFieldsDisabled}
+                      />
+                    </label>
+                    <label className="label">
+                      Cylindre OD
+                      <input
+                        type="number"
+                        step="0.25"
+                        className="field mt-1"
+                        value={draft.cylindreOD}
+                        onChange={(event) =>
+                          updateDraft("cylindreOD", event.target.value)
+                        }
+                        disabled={formFieldsDisabled}
+                      />
+                    </label>
+                    <label className="label">
+                      Axe OD (0–180)
+                      <input
+                        type="number"
+                        min="0"
+                        max="180"
+                        step="1"
+                        className="field mt-1"
+                        value={draft.axeOD}
+                        onChange={(event) =>
+                          updateDraft("axeOD", event.target.value)
+                        }
+                        disabled={formFieldsDisabled}
+                      />
+                    </label>
+                    <p className="label md:col-span-2">Œil gauche (OG)</p>
+                    <label className="label">
+                      Sphère OG
+                      <input
+                        type="number"
+                        step="0.25"
+                        className="field mt-1"
+                        value={draft.sphereOG}
+                        onChange={(event) =>
+                          updateDraft("sphereOG", event.target.value)
+                        }
+                        disabled={formFieldsDisabled}
+                      />
+                    </label>
+                    <label className="label">
+                      Cylindre OG
+                      <input
+                        type="number"
+                        step="0.25"
+                        className="field mt-1"
+                        value={draft.cylindreOG}
+                        onChange={(event) =>
+                          updateDraft("cylindreOG", event.target.value)
+                        }
+                        disabled={formFieldsDisabled}
+                      />
+                    </label>
+                    <label className="label">
+                      Axe OG (0–180)
+                      <input
+                        type="number"
+                        min="0"
+                        max="180"
+                        step="1"
+                        className="field mt-1"
+                        value={draft.axeOG}
+                        onChange={(event) =>
+                          updateDraft("axeOG", event.target.value)
+                        }
+                        disabled={formFieldsDisabled}
+                      />
+                    </label>
+                  </>
+                )}
+                {draft.typeConsommation === "AUTRE" && (
+                  <label className="label md:col-span-2">
+                    Description de la consommation
+                    <textarea
+                      className="field mt-1"
+                      rows={2}
+                      value={draft.descriptionConsommation}
+                      onChange={(event) =>
+                        updateDraft(
+                          "descriptionConsommation",
+                          event.target.value,
+                        )
+                      }
+                      disabled={formFieldsDisabled}
+                    />
+                  </label>
+                )}
                 <label className="label">
                   N° de prise en charge
                   <input
@@ -1459,7 +2232,12 @@ export default function T6Page() {
                 <button
                   type="submit"
                   className="btn-primary"
-                  disabled={formFieldsDisabled || !selectedActe}
+                  disabled={
+                    formFieldsDisabled ||
+                    !selectedActe ||
+                    idpValidationStatus !== "valid" ||
+                    verifiedIdp !== draft.idp.trim()
+                  }
                 >
                   {editingLineId === null ? "Ajouter la ligne" : "Enregistrer"}
                 </button>

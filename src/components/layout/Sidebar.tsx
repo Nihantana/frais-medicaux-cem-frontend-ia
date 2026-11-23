@@ -55,6 +55,7 @@ const nav: NavEntry[] = [
   { to: "/statistiques", label: "Statistiques", icon: ChartNoAxesCombined, permission: "reporting.read" },
   { to: "/assistant", label: "Assistant global", icon: Sparkles, permission: "assistant.use" },
   { to: "/factures/t6", label: "Détail des frais médicaux", icon: ClipboardPlus, permission: "t6.read" },
+  { to: "/suivi-consommations", label: "Suivi des consommations", icon: ClipboardList, permission: "t6.read" },
   { to: "/paie", label: "Retenue sur salaire", icon: WalletCards, permission: "payroll.read" },
   { to: "/actes-prestations", label: "Actes et prestations", icon: ClipboardPlus, permission: "reference-data.read" },
   { section: "Paramétrage" },

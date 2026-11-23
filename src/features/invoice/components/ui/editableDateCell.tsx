@@ -15,7 +15,7 @@ function toInputDate(value: string): string {
   return match ? `${match[3]}-${match[2]}-${match[1]}` : value;
 }
 
-function toStoredDate(value: string): string {
+function toDisplayDate(value: string): string {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
 }
@@ -39,7 +39,7 @@ export default function EditableDateCell({
   };
 
   const commit = () => {
-    onSave(toStoredDate(draft));
+    onSave(toInputDate(draft));
     setEditing(false);
   };
 
@@ -47,7 +47,7 @@ export default function EditableDateCell({
 
   const closeIfUnchanged = () => {
     if (dateInputRef.current === document.activeElement) return;
-    if (toStoredDate(draft) === value) setEditing(false);
+    if (toInputDate(draft) === toInputDate(value)) setEditing(false);
   };
 
   return (
@@ -94,7 +94,7 @@ export default function EditableDateCell({
           </span>
         </>
       ) : (
-        value || (emptyValue && <span className="absolute inset-0 flex items-center justify-center">{emptyValue}</span>)
+        toDisplayDate(value) || (emptyValue && <span className="absolute inset-0 flex items-center justify-center">{emptyValue}</span>)
       )}
     </td>
   );

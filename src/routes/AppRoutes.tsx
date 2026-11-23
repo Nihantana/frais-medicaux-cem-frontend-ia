@@ -22,7 +22,7 @@ import AuditSessionsPage from "../pages/AuditSessionsPage";
 import PaiePage from "../pages/PaiePage";
 import DashboardPage from "../pages/DashboardPage";
 import StatisticsPage from "../pages/StatisticsPage";
-import { fetchIdpLookupMock } from "../features/invoice/mocks/idpLookup";
+import ConsommationsPage from "../pages/ConsommationsPage";
 import { ROUTES } from "../constants/routes";
 
 function AppShell({ children }: { children: ReactNode }) {
@@ -36,6 +36,7 @@ const accessibleRoutes = [
   ["/pec", "attestations.read"],
   ["/factures", "invoices.read"],
   ["/factures/t6", "t6.read"],
+  ["/suivi-consommations", "t6.read"],
   ["/paie", "payroll.read"],
   ["/statistiques", "reporting.read"],
   ["/assistant", "assistant.use"],
@@ -184,6 +185,16 @@ export default function AppRoutes() {
           </RequirePermission>
         }
       />
+      <Route
+        path={ROUTES.consumptions}
+        element={
+          <RequirePermission permission="t6.read">
+            <AppShell>
+              <ConsommationsPage />
+            </AppShell>
+          </RequirePermission>
+        }
+      />
       <Route path={ROUTES.paie} element={<RequirePermission permission="payroll.read"><AppShell><PaiePage /></AppShell></RequirePermission>} />
       <Route path={ROUTES.statistics} element={<RequirePermission permission="reporting.read"><AppShell><StatisticsPage /></AppShell></RequirePermission>} />
       <Route path={ROUTES.assistant} element={<RequirePermission permission="assistant.use"><AppShell><AssistantGlobalPage /></AppShell></RequirePermission>} />
@@ -201,7 +212,7 @@ export default function AppRoutes() {
         path={ROUTES.T5ParAn}
         element={
           <RequirePermission permission="follow-up.read">
-            <LookupLayout onSearchIdp={fetchIdpLookupMock}>
+            <LookupLayout>
               <T5ParAnPage />
             </LookupLayout>
           </RequirePermission>
@@ -211,7 +222,7 @@ export default function AppRoutes() {
         path={ROUTES.T5ParAnParActe}
         element={
           <RequirePermission permission="follow-up.read">
-            <LookupLayout onSearchIdp={fetchIdpLookupMock}>
+            <LookupLayout>
               <T5ParAnParActePage />
             </LookupLayout>
           </RequirePermission>
@@ -221,7 +232,7 @@ export default function AppRoutes() {
         path={ROUTES.T5Parseance}
         element={
           <RequirePermission permission="follow-up.read">
-            <LookupLayout onSearchIdp={fetchIdpLookupMock}>
+            <LookupLayout>
               <T5ParSeancePage />
             </LookupLayout>
           </RequirePermission>
